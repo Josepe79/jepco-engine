@@ -2,6 +2,19 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 const config = require('../config');
 const vectorService = require('./vector.service');
 
+function stripMarkdown(text) {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/\*(.*?)\*/g, '$1')
+    .replace(/__(.*?)__/g, '$1')
+    .replace(/_(.*?)_/g, '$1')
+    .replace(/`{1,3}([\s\S]*?)`{1,3}/g, '$1')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/^\s*[-*+]\s+/gm, '')
+    .trim();
+}
+
 const genAI = new GoogleGenerativeAI(config.GEMINI_API_KEY, { apiVersion: 'v1' });
 
 async function getAIResponse(brandId, userMessage, history = [], category = null) {
@@ -87,11 +100,12 @@ async function getAIResponse(brandId, userMessage, history = [], category = null
     throw geminiError;
   }
 
-  const responseText = result.response.text();
-  const shouldEscalate = responseText.includes('[ESCALAR_A_HUMANO]');
+  const rawText = result.response.text();
+  const shouldEscalate = rawText.includes('[ESCALAR_A_HUMANO]');
+  const cleanText = stripMarkdown(rawText.replace('[ESCALAR_A_HUMANO]', ''));
 
   return {
-    text: responseText.replace('[ESCALAR_A_HUMANO]', '').trim(),
+    text: cleanText,
     shouldEscalate
   };
 }
