@@ -57,6 +57,19 @@ fastify.get('/health', async () => {
   return { status: 'ok', timestamp: new Date() };
 });
 
+// Endpoint de diagnóstico — protegido con UPLOAD_SECRET
+fastify.get('/debug/chat-test', async (request, reply) => {
+  const blocked = validateUploadSecret(request, reply);
+  if (blocked) return;
+  try {
+    const aiService = require('./services/ai.service');
+    const result = await aiService.getAIResponse('snfplus', 'hola', []);
+    return { status: 'ok', reply: result.text };
+  } catch (err) {
+    return reply.status(500).send({ status: 'error', message: err.message, type: err.constructor.name });
+  }
+});
+
 /**
  * Web Chat — endpoint público del widget.
  * Rate limit: RATE_LIMIT_MAX req/min por IP (default 30).
