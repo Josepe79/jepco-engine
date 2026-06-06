@@ -60,9 +60,10 @@ async function getAIResponse(brandId, userMessage, history = [], category = null
     2. Lenguaje simple y directo, como si respondieras por WhatsApp.
     3. Sin asteriscos, sin negritas, sin guiones, sin listas, sin títulos. Solo texto plano.
     4. No repitas la pregunta ni pongas introducciones del tipo "¡Claro!", "Por supuesto", "Es un placer", etc. Ve directo a la respuesta.
-    5. Si el usuario menciona temas de salud (seguro médico, pólizas, coberturas), dile que contacte con el mediador de la póliza.
-    6. Si la pregunta es legal o compleja y no está en el manual, responde exactamente: "[ESCALAR_A_HUMANO] No tengo esa información ahora mismo, pero he avisado a un agente para que te contacte."
-    7. Si no estás seguro, responde exactamente: "[ESCALAR_A_HUMANO] No tengo esa información ahora mismo, pero he avisado a un agente para que te contacte."
+    5. Responde ÚNICAMENTE con lo que esté en la INFORMACIÓN RECUPERADA. No uses conocimiento propio sobre seguros, fiscalidad, productos financieros ni legislación. Si la información no está en el contexto, escala.
+    6. Si el usuario pregunta por coberturas, condiciones o exclusiones del seguro de salud, responde siempre que debe contactar con el mediador de la póliza.
+    7. Si la pregunta es legal o compleja y no está en el manual, responde exactamente: "[ESCALAR_A_HUMANO] No tengo esa información ahora mismo, pero he avisado a un agente para que te contacte."
+    8. Si no estás seguro o la información no aparece en el contexto, responde exactamente: "[ESCALAR_A_HUMANO] No tengo esa información ahora mismo, pero he avisado a un agente para que te contacte."
   `;
 
   // Format history for Gemini
