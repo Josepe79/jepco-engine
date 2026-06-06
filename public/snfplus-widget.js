@@ -6,7 +6,7 @@
 
     const CONFIG = {
         brandId:   'snfplus',
-        brandName: (_script && _script.getAttribute('data-env-label')) || 'SNF Plus',
+        brandName: (_script && _script.getAttribute('data-env-label')) || 'SNF+',
         appUrl:    (_script && _script.getAttribute('data-app-url'))   || null,
         mediador:  (_script && _script.getAttribute('data-mediador'))  || null,
         baseUrl: (function() {
