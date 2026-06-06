@@ -64,11 +64,29 @@ async function getAIResponse(brandId, userMessage, history = [], category = null
   });
 
   const prompt = `${systemInstruction}\n\nMensaje del usuario: ${userMessage}`;
-  const result = await chat.sendMessage(prompt);
-  const responseText = result.response.text();
+  let result;
+  try {
+    result = await chat.sendMessage(prompt);
+  } catch (geminiError) {
+    const msg = geminiError.message || '';
+    if (msg.includes('429') || msg.includes('quota') || msg.includes('Too Many Requests')) {
+      return {
+        text: 'En este momento el asistente está recibiendo muchas consultas. Por favor, inténtalo de nuevo en unos segundos.',
+        shouldEscalate: false
+      };
+    }
+    if (msg.includes('503') || msg.includes('Service Unavailable')) {
+      return {
+        text: 'El asistente no está disponible temporalmente. Por favor, inténtalo de nuevo en unos minutos.',
+        shouldEscalate: false
+      };
+    }
+    throw geminiError;
+  }
 
+  const responseText = result.response.text();
   const shouldEscalate = responseText.includes('[ESCALAR_A_HUMANO]');
-  
+
   return {
     text: responseText.replace('[ESCALAR_A_HUMANO]', '').trim(),
     shouldEscalate
