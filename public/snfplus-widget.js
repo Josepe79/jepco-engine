@@ -112,6 +112,7 @@
 
         #jepco-chat-messages {
             flex: 1;
+            min-height: 0;
             padding: 20px;
             overflow-y: auto;
             background: ${CONFIG.secondaryColor};
@@ -164,6 +165,8 @@
             background: ${CONFIG.secondaryColor};
             border-top: 1px solid #e8e8e8;
             flex-shrink: 0;
+            max-height: 230px;
+            overflow-y: auto;
         }
 
         #jepco-chat-input-container {
