@@ -67,9 +67,13 @@ fastify.register(cors, {
   }
 });
 
-// Rate limiting global — protege /api/chat de abuso y agotamiento de cuota Gemini
+// Rate limiting — global:true con límite alto de base; las rutas sensibles
+// lo reducen con su propio config.rateLimit.
 fastify.register(rateLimit, {
-  global: false, // Solo aplicamos donde se declara explícitamente
+  global: true,
+  max: 120,
+  timeWindow: '1 minute',
+  keyGenerator: (req) => req.ip,
 });
 
 // ── Rutas ──────────────────────────────────────────────────────────────────────
