@@ -1,4 +1,4 @@
-const fastify = require('fastify')({ logger: true });
+const fastify = require('fastify')({ logger: true, trustProxy: true });
 const crypto = require('crypto');
 const config = require('./config');
 const telegram = require('./services/telegram.service');
