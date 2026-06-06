@@ -87,14 +87,14 @@ fastify.post('/api/chat', {
     }
   }
 }, async (request, reply) => {
-  const { brandId, userId, message, category } = request.body;
+  const { brandId, userId, message, category, appUrl } = request.body;
 
   if (!brandId || !userId || !message) {
     return reply.status(400).send({ error: 'Missing required fields' });
   }
 
   try {
-    const result = await telegram.handleMessage(brandId, 'WEB', userId, message, category);
+    const result = await telegram.handleMessage(brandId, 'WEB', userId, message, null, category, appUrl);
     return {
       reply: result.text,
       status: result.shouldEscalate ? 'escalated' : 'ok'

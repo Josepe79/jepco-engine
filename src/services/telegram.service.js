@@ -39,7 +39,7 @@ Object.entries(config.BOT_TOKENS).forEach(([brandId, token]) => {
   }
 });
 
-async function handleMessage(brandId, platform, userId, text, ctx = null, category = null) {
+async function handleMessage(brandId, platform, userId, text, ctx = null, category = null, appUrl = null) {
   try {
     // 1. Get or create conversation
     let conversation = await db.conversation.findFirst({
@@ -62,7 +62,7 @@ async function handleMessage(brandId, platform, userId, text, ctx = null, catego
     history.push({ role: 'user', text, timestamp: new Date() });
 
     // 3. Get AI response
-    const aiResult = await ai.getAIResponse(brandId, text, history);
+    const aiResult = await ai.getAIResponse(brandId, text, history, category, appUrl);
 
     // 4. Update history with AI response
     history.push({ role: 'ai', text: aiResult.text, timestamp: new Date() });

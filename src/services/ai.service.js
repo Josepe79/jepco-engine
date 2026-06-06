@@ -17,7 +17,7 @@ function stripMarkdown(text) {
 
 const genAI = new GoogleGenerativeAI(config.GEMINI_API_KEY, { apiVersion: 'v1' });
 
-async function getAIResponse(brandId, userMessage, history = [], category = null) {
+async function getAIResponse(brandId, userMessage, history = [], category = null, appUrl = null) {
   const brand = config.BRANDS[brandId];
   if (!brand) throw new Error('Unknown brand');
 
@@ -51,6 +51,7 @@ async function getAIResponse(brandId, userMessage, history = [], category = null
   const systemInstruction = `
     Eres el asistente de ${brand.name}. ${brand.personality}
     Conocimiento base: ${brand.manual}
+    ${appUrl ? `URL de acceso a la aplicación: ${appUrl}` : ''}
 
     INFORMACIÓN RECUPERADA (úsala si es relevante):
     ${context || 'Sin información adicional.'}
