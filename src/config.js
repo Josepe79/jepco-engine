@@ -6,6 +6,11 @@ module.exports = {
   GEMINI_API_KEY: process.env.GEMINI_API_KEY,
   ADMIN_TELEGRAM_CHAT_ID: process.env.ADMIN_TELEGRAM_CHAT_ID,
   ADMIN_BOT_TOKEN: process.env.ADMIN_BOT_TOKEN,
+  UPLOAD_SECRET: process.env.UPLOAD_SECRET,
+  // Orígenes CORS permitidos, separados por coma. '*' permite cualquier dominio.
+  CORS_ORIGINS: process.env.CORS_ORIGINS || '*',
+  // Máximo de peticiones por minuto por IP en /api/chat
+  RATE_LIMIT_MAX: parseInt(process.env.RATE_LIMIT_MAX || '30', 10),
   BOT_TOKENS: {
     saludflex: process.env.SALUDFLEX_BOT_TOKEN,
     veganfood: process.env.VEGANFOOD_BOT_TOKEN,

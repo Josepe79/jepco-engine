@@ -17,18 +17,23 @@
             }
             return '/api/chat';
         })(),
-        // Persist userId across page loads so conversation history is maintained
+        // Persist userId across page loads so conversation history is maintained.
+        // Uses crypto.randomUUID() for a cryptographically strong identifier.
         userId: (function() {
             var key = 'jepco_snfplus_uid';
             try {
                 var id = localStorage.getItem(key);
                 if (!id) {
-                    id = 'web_' + Math.random().toString(36).substr(2, 9);
+                    id = (crypto && crypto.randomUUID)
+                        ? crypto.randomUUID()
+                        : ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, function(c) {
+                            return (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16);
+                          });
                     localStorage.setItem(key, id);
                 }
                 return id;
             } catch (e) {
-                return 'web_' + Math.random().toString(36).substr(2, 9);
+                return 'uid_' + Date.now().toString(36);
             }
         })(),
         primaryColor: '#0047AB',

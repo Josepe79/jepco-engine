@@ -3,40 +3,77 @@ const config = require('./config');
 const telegram = require('./services/telegram.service');
 const db = require('./services/db.service');
 const cors = require('@fastify/cors');
+const rateLimit = require('@fastify/rate-limit');
 const multipart = require('@fastify/multipart');
 const fastifyStatic = require('@fastify/static');
 const path = require('path');
 const ingestionService = require('./services/ingestion.service');
 const aiService = require('./services/ai.service');
 
-// Register Static Files (for widgets)
+// ── Helpers ────────────────────────────────────────────────────────────────────
+
+function validateUploadSecret(request, reply) {
+  const auth = request.headers['authorization'];
+  if (!config.UPLOAD_SECRET) {
+    // Si no hay secret configurado, bloquear por defecto
+    return reply.status(503).send({ error: 'Upload endpoint not configured' });
+  }
+  if (!auth || auth !== `Bearer ${config.UPLOAD_SECRET}`) {
+    return reply.status(401).send({ error: 'Unauthorized' });
+  }
+}
+
+// ── Plugins ────────────────────────────────────────────────────────────────────
+
 fastify.register(fastifyStatic, {
   root: path.join(__dirname, '../public'),
-  prefix: '/public/', // Files will be at http://localhost:3001/public/...
+  prefix: '/public/',
 });
 
-// Register Multipart
 fastify.register(multipart, {
-  limits: {
-    fileSize: 50 * 1024 * 1024 // 50MB
+  limits: { fileSize: 50 * 1024 * 1024 }
+});
+
+// CORS: configurable vía CORS_ORIGINS (coma-separado). Por defecto '*' para
+// permitir que el widget se incruste en cualquier dominio de cliente.
+fastify.register(cors, {
+  origin: (origin, cb) => {
+    const allowed = config.CORS_ORIGINS;
+    if (allowed === '*') return cb(null, true);
+    const list = allowed.split(',').map(o => o.trim());
+    if (!origin || list.includes(origin)) return cb(null, true);
+    cb(new Error('Not allowed by CORS'), false);
   }
 });
 
-// Register CORS
-fastify.register(cors, {
-  origin: '*', // Adjust for production
+// Rate limiting global — protege /api/chat de abuso y agotamiento de cuota Gemini
+fastify.register(rateLimit, {
+  global: false, // Solo aplicamos donde se declara explícitamente
 });
 
-// Health check
+// ── Rutas ──────────────────────────────────────────────────────────────────────
+
 fastify.get('/health', async () => {
   return { status: 'ok', timestamp: new Date() };
 });
 
 /**
- * Web Chat Endpoint (REST)
- * Used by the frontend widget to send messages
+ * Web Chat — endpoint público del widget.
+ * Rate limit: RATE_LIMIT_MAX req/min por IP (default 30).
  */
-fastify.post('/api/chat', async (request, reply) => {
+fastify.post('/api/chat', {
+  config: {
+    rateLimit: {
+      max: config.RATE_LIMIT_MAX,
+      timeWindow: '1 minute',
+      errorResponseBuilder: () => ({
+        statusCode: 429,
+        error: 'Too Many Requests',
+        message: 'Has enviado demasiados mensajes. Espera un momento e inténtalo de nuevo.'
+      })
+    }
+  }
+}, async (request, reply) => {
   const { brandId, userId, message, category } = request.body;
 
   if (!brandId || !userId || !message) {
@@ -56,11 +93,14 @@ fastify.post('/api/chat', async (request, reply) => {
 });
 
 /**
- * Get Conversation History
+ * Historial de conversación — protegido con UPLOAD_SECRET.
+ * Endpoint de administración, no expuesto al widget.
  */
 fastify.get('/api/history/:brandId/:userId', async (request, reply) => {
-  const { brandId, userId } = request.params;
+  const blocked = validateUploadSecret(request, reply);
+  if (blocked) return;
 
+  const { brandId, userId } = request.params;
   try {
     const conversation = await db.conversation.findFirst({
       where: { brandId, userId }
@@ -72,9 +112,12 @@ fastify.get('/api/history/:brandId/:userId', async (request, reply) => {
 });
 
 /**
- * Knowledge Base Upload
+ * Subida de conocimiento — protegido con UPLOAD_SECRET.
  */
 fastify.post('/api/knowledge/upload', async (request, reply) => {
+  const blocked = validateUploadSecret(request, reply);
+  if (blocked) return;
+
   const data = await request.file();
   if (!data) {
     return reply.status(400).send({ error: 'No file uploaded' });
@@ -96,21 +139,23 @@ fastify.post('/api/knowledge/upload', async (request, reply) => {
     return result;
   } catch (error) {
     const fs = require('fs');
-    const logMessage = `\n[${new Date().toISOString()}] UPLOAD ERROR: ${error.stack || error.message}\n`;
-    fs.appendFileSync('error_log.txt', logMessage);
-    console.error('FULL ERROR IN UPLOAD:', error);
+    fs.appendFileSync('error_log.txt', `\n[${new Date().toISOString()}] UPLOAD ERROR: ${error.stack || error.message}\n`);
     fastify.log.error(error);
     return reply.status(500).send({ error: 'Error processing file' });
   }
 });
 
-// Endpoint de subida directo para terminal y API
+/**
+ * Endpoint de subida directo (CLI/API) — protegido con UPLOAD_SECRET.
+ */
 fastify.post('/upload', async (request, reply) => {
+  const blocked = validateUploadSecret(request, reply);
+  if (blocked) return;
+
   console.log('>>> Upload request received');
   try {
     const data = await request.file();
     if (!data) {
-      console.log('>>> No data found in request');
       return reply.status(400).send({ error: 'No file uploaded' });
     }
 
@@ -118,8 +163,7 @@ fastify.post('/upload', async (request, reply) => {
     const brandId = data.fields.brandId ? data.fields.brandId.value : 'snfplus';
     const category = data.fields.category ? data.fields.category.value : null;
     console.log(`>>> Brand ID: ${brandId}, Category: ${category}`);
-    
-    // Leemos el archivo como chunks para evitar saturar la memoria
+
     const chunks = [];
     for await (const chunk of data.file) {
       chunks.push(chunk);
@@ -138,7 +182,8 @@ fastify.post('/upload', async (request, reply) => {
   }
 });
 
-// Start Server
+// ── Start ──────────────────────────────────────────────────────────────────────
+
 const start = async () => {
   try {
     await fastify.listen({ port: config.PORT, host: '0.0.0.0' });
