@@ -86,8 +86,8 @@
         #jepco-chat-bubble:hover { transform: scale(1.1); }
         #jepco-chat-bubble svg { width: 30px; height: 30px; fill: white; }
         #jepco-chat-window {
-            width: 380px;
-            height: 600px;
+            width: min(380px, calc(100vw - 30px));
+            height: min(600px, calc(100vh - 100px));
             background: white;
             position: absolute;
             bottom: 80px;
@@ -290,6 +290,57 @@
         .jepco-sub-btn:hover { background: ${CONFIG.primaryColor}; color: white; border-color: ${CONFIG.primaryColor}; }
         .jepco-back-btn { background: #eee !important; color: #333 !important; border-color: #ddd !important; }
         .jepco-back-btn:hover { background: #ddd !important; color: #333 !important; }
+
+        /* ── Touch: elimina el retraso de 300ms en iOS/Android ────────────── */
+        #jepco-chat-bubble, #jepco-chat-send, #jepco-menu-btn, #jepco-close,
+        #jepco-consent-accept, #jepco-consent-reject, #jepco-delete-link,
+        .jepco-action-btn, .jepco-sub-btn {
+            touch-action: manipulation;
+        }
+
+        /* ── Área de toque mínima para el botón cerrar ─────────────────────── */
+        #jepco-close {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 36px;
+            min-height: 36px;
+            margin: -6px -4px;
+            border-radius: 6px;
+        }
+
+        /* ── Móvil: ventana casi pantalla completa ──────────────────────────── */
+        @media (max-width: 450px) {
+            #jepco-chat-widget {
+                bottom: max(12px, env(safe-area-inset-bottom, 12px));
+                right: 12px;
+            }
+            #jepco-chat-window {
+                position: fixed;
+                left: 10px;
+                right: 10px;
+                bottom: 82px;
+                width: auto;
+                height: calc(100vh - 100px);
+                border-radius: 16px;
+            }
+            #jepco-chat-header {
+                padding: 12px 15px;
+            }
+            #jepco-chat-header h3 {
+                font-size: 16px;
+            }
+            #jepco-menu-btn {
+                font-size: 11px;
+                padding: 4px 8px;
+            }
+            #jepco-quick-actions {
+                max-height: 185px;
+            }
+            #jepco-chat-messages {
+                padding: 15px;
+            }
+        }
     `;
 
     var styleSheet = document.createElement('style');
