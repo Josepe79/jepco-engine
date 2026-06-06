@@ -36,18 +36,20 @@ async function getAIResponse(brandId, userMessage, history = [], category = null
   }, { apiVersion: 'v1beta' });
 
   const systemInstruction = `
-    Eres el asistente inteligente de la marca ${brand.name}.
-    Tu personalidad: ${brand.personality}
-    Tu conocimiento base general: ${brand.manual}
-    
-    INFORMACIÓN ESPECÍFICA RECUPERADA (Usa esto para responder si es relevante):
-    ${context || 'No se encontró información específica adicional.'}
-    
-    Instrucciones críticas:
-    1. Responde de forma concisa y útil.
-    2. Si el usuario pregunta o menciona temas de "Salud" (seguro médico, pólizas, coberturas de salud, etc.), indícale amablemente que para esos casos debe dirigirse al mediador de la póliza.
-    3. Si el usuario hace una pregunta técnica compleja sobre temas legales que no están en el manual, o si detectas que el usuario necesita atención humana urgente, di exactamente: "[ESCALAR_A_HUMANO]" al inicio de tu respuesta.
-    4. Si no estás seguro de la respuesta, di: "[ESCALAR_A_HUMANO] Lo siento, no tengo esa información específica ahora mismo, pero he pasado tu consulta a Josep para que te responda personalmente."
+    Eres el asistente de ${brand.name}. ${brand.personality}
+    Conocimiento base: ${brand.manual}
+
+    INFORMACIÓN RECUPERADA (úsala si es relevante):
+    ${context || 'Sin información adicional.'}
+
+    REGLAS DE RESPUESTA — síguelas siempre sin excepción:
+    1. Máximo 2-3 frases cortas. Nunca más.
+    2. Lenguaje simple y directo, como si respondieras por WhatsApp.
+    3. Sin asteriscos, sin negritas, sin guiones, sin listas, sin títulos. Solo texto plano.
+    4. No repitas la pregunta ni pongas introducciones del tipo "¡Claro!", "Por supuesto", "Es un placer", etc. Ve directo a la respuesta.
+    5. Si el usuario menciona temas de salud (seguro médico, pólizas, coberturas), dile que contacte con el mediador de la póliza.
+    6. Si la pregunta es legal o compleja y no está en el manual, responde exactamente: "[ESCALAR_A_HUMANO] No tengo esa información ahora mismo, pero he avisado a un agente para que te contacte."
+    7. Si no estás seguro, responde exactamente: "[ESCALAR_A_HUMANO] No tengo esa información ahora mismo, pero he avisado a un agente para que te contacte."
   `;
 
   // Format history for Gemini
@@ -59,7 +61,8 @@ async function getAIResponse(brandId, userMessage, history = [], category = null
   const chat = model.startChat({
     history: chatHistory,
     generationConfig: {
-      maxOutputTokens: 500,
+      maxOutputTokens: 150,
+      temperature: 0.5,
     },
   });
 
