@@ -97,17 +97,35 @@
         #jepco-chat-header {
             background: ${CONFIG.primaryColor};
             color: white;
-            padding: 20px;
+            padding: 15px 20px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             flex-shrink: 0;
+            gap: 10px;
         }
 
         #jepco-chat-header h3 {
             margin: 0;
             font-size: 18px;
             font-weight: 600;
+            flex: 1;
+        }
+
+        #jepco-menu-btn {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.4);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            white-space: nowrap;
+            transition: background 0.2s;
+        }
+
+        #jepco-menu-btn:hover {
+            background: rgba(255,255,255,0.35);
         }
 
         #jepco-chat-messages {
@@ -248,6 +266,7 @@
         <div id="jepco-chat-window">
             <div id="jepco-chat-header">
                 <h3>${CONFIG.brandName} Support</h3>
+                <button id="jepco-menu-btn">☰ Opciones</button>
                 <span id="jepco-close" style="cursor:pointer;font-size:22px;line-height:1">&times;</span>
             </div>
             <div id="jepco-chat-messages">
@@ -268,6 +287,7 @@
     var bubble = document.getElementById('jepco-chat-bubble');
     var chatWindow = document.getElementById('jepco-chat-window');
     var closeBtn = document.getElementById('jepco-close');
+    var menuBtn = document.getElementById('jepco-menu-btn');
     var input = document.getElementById('jepco-chat-input');
     var sendBtn = document.getElementById('jepco-chat-send');
     var messagesContainer = document.getElementById('jepco-chat-messages');
@@ -390,6 +410,10 @@
 
     closeBtn.addEventListener('click', function() {
         chatWindow.style.display = 'none';
+    });
+
+    menuBtn.addEventListener('click', function() {
+        showMainMenu();
     });
 
     sendBtn.addEventListener('click', function() { sendMessage(); });
