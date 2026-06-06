@@ -1,8 +1,10 @@
 const fastify = require('fastify')({ logger: true });
+const crypto = require('crypto');
 const config = require('./config');
 const telegram = require('./services/telegram.service');
 const db = require('./services/db.service');
 const cors = require('@fastify/cors');
+const helmet = require('@fastify/helmet');
 const rateLimit = require('@fastify/rate-limit');
 const multipart = require('@fastify/multipart');
 const fastifyStatic = require('@fastify/static');
@@ -10,20 +12,39 @@ const path = require('path');
 const ingestionService = require('./services/ingestion.service');
 const aiService = require('./services/ai.service');
 
+// ── Validación de inputs ────────────────────────────────────────────────────────
+
+const ALLOWED_BRANDS     = new Set(Object.keys(config.BRANDS));
+const ALLOWED_CATEGORIES = new Set([
+  'acceso_navegacion', 'perfil', 'familiares', 'productos_general',
+  'ahorro', 'salud', 'guarderia', 'comida', 'transporte',
+  'formacion', 'renting', 'contrato_novacion'
+]);
+const MAX_MESSAGE_LENGTH = 1000;
+
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
 function validateUploadSecret(request, reply) {
   const auth = request.headers['authorization'];
   if (!config.UPLOAD_SECRET) {
-    // Si no hay secret configurado, bloquear por defecto
     return reply.status(503).send({ error: 'Upload endpoint not configured' });
   }
-  if (!auth || auth !== `Bearer ${config.UPLOAD_SECRET}`) {
+  if (!auth) {
+    return reply.status(401).send({ error: 'Unauthorized' });
+  }
+  // Comparación en tiempo constante para evitar timing attacks
+  const expected = `Bearer ${config.UPLOAD_SECRET}`;
+  const authBuf     = Buffer.from(auth.padEnd(expected.length));
+  const expectedBuf = Buffer.from(expected);
+  if (authBuf.length !== expectedBuf.length || !crypto.timingSafeEqual(authBuf, expectedBuf)) {
     return reply.status(401).send({ error: 'Unauthorized' });
   }
 }
 
 // ── Plugins ────────────────────────────────────────────────────────────────────
+
+// Cabeceras de seguridad HTTP (X-Content-Type-Options, Referrer-Policy, etc.)
+fastify.register(helmet, { global: true });
 
 fastify.register(fastifyStatic, {
   root: path.join(__dirname, '../public'),
@@ -91,6 +112,15 @@ fastify.post('/api/chat', {
 
   if (!brandId || !userId || !message) {
     return reply.status(400).send({ error: 'Missing required fields' });
+  }
+  if (!ALLOWED_BRANDS.has(brandId)) {
+    return reply.status(400).send({ error: 'Invalid brandId' });
+  }
+  if (message.length > MAX_MESSAGE_LENGTH) {
+    return reply.status(400).send({ error: 'Message too long' });
+  }
+  if (category && !ALLOWED_CATEGORIES.has(category)) {
+    return reply.status(400).send({ error: 'Invalid category' });
   }
 
   try {
@@ -221,7 +251,19 @@ async function cleanupOldConversations() {
  * El usuario puede borrar sus propias conversaciones usando el userId almacenado
  * en su localStorage. No requiere auth ya que el UUID sólo lo conoce el propio usuario.
  */
-fastify.delete('/api/my-data/:userId', async (request, reply) => {
+fastify.delete('/api/my-data/:userId', {
+  config: {
+    rateLimit: {
+      max: 5,
+      timeWindow: '1 minute',
+      errorResponseBuilder: () => ({
+        statusCode: 429,
+        error: 'Too Many Requests',
+        message: 'Demasiadas solicitudes. Espera un momento e inténtalo de nuevo.'
+      })
+    }
+  }
+}, async (request, reply) => {
   const { userId } = request.params;
   if (!userId || userId.length < 8) {
     return reply.status(400).send({ error: 'Invalid userId' });

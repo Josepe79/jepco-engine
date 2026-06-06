@@ -442,21 +442,43 @@
     });
 
     document.getElementById('jepco-delete-link').addEventListener('click', function() {
-        if (!confirm('¿Seguro? Esto borrará tu historial de conversaciones. Esta acción no se puede deshacer.')) return;
-        fetch(CONFIG.deleteUrl, { method: 'DELETE' })
-            .then(function() {
-                try {
-                    localStorage.removeItem(UID_KEY);
-                    localStorage.removeItem(GDPR_KEY);
-                } catch (e) {}
-                addMessage('Tus datos han sido eliminados. Cierra y vuelve a abrir el chat para comenzar de nuevo.', 'bot');
-                quickActions.style.display   = 'none';
-                inputContainer.style.display = 'none';
-                gdprFooter.style.display     = 'none';
-            })
-            .catch(function() {
-                addMessage('No se pudieron eliminar los datos. Inténtalo de nuevo más tarde.', 'bot');
-            });
+        // Confirmación inline — no usamos confirm() porque se bloquea en iframes
+        var existing = document.getElementById('jepco-delete-confirm');
+        if (existing) { existing.remove(); return; }
+
+        var confirmPanel = document.createElement('div');
+        confirmPanel.id = 'jepco-delete-confirm';
+        confirmPanel.style.cssText = 'padding:10px 15px 12px; background:#fff8e1; border-top:1px solid #ffe082; flex-shrink:0; font-size:12px; color:#5d4037;';
+        confirmPanel.innerHTML =
+            '<p style="margin:0 0 8px 0">¿Seguro? Esto borrará tu historial y no se puede deshacer.</p>' +
+            '<div style="display:flex;gap:8px;">' +
+            '<button id="jepco-del-yes" style="flex:1;background:#c62828;color:white;border:none;padding:7px;border-radius:6px;cursor:pointer;font-size:12px;touch-action:manipulation">Sí, borrar</button>' +
+            '<button id="jepco-del-no"  style="flex:1;background:#757575;color:white;border:none;padding:7px;border-radius:6px;cursor:pointer;font-size:12px;touch-action:manipulation">Cancelar</button>' +
+            '</div>';
+
+        chatWindow.insertBefore(confirmPanel, gdprFooter);
+
+        document.getElementById('jepco-del-no').addEventListener('click', function() {
+            confirmPanel.remove();
+        });
+
+        document.getElementById('jepco-del-yes').addEventListener('click', function() {
+            confirmPanel.remove();
+            fetch(CONFIG.deleteUrl, { method: 'DELETE' })
+                .then(function() {
+                    try {
+                        localStorage.removeItem(UID_KEY);
+                        localStorage.removeItem(GDPR_KEY);
+                    } catch (e) {}
+                    addMessage('Tus datos han sido eliminados. Cierra y vuelve a abrir el chat para comenzar de nuevo.', 'bot');
+                    quickActions.style.display   = 'none';
+                    inputContainer.style.display = 'none';
+                    gdprFooter.style.display     = 'none';
+                })
+                .catch(function() {
+                    addMessage('No se pudieron eliminar los datos. Inténtalo de nuevo más tarde.', 'bot');
+                });
+        });
     });
 
     // ── Menús ──────────────────────────────────────────────────────────────────
