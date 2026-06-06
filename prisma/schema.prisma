@@ -1,0 +1,44 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Platform {
+  WEB
+  TELEGRAM
+}
+
+enum Status {
+  PENDING
+  RESOLVED
+  ESCALATED
+}
+
+model Conversation {
+  id              String   @id @default(uuid())
+  userId          String   // Telegram user ID or Web session ID
+  platform        Platform
+  brandId         String   // saludflex, veganfood, domainhunter
+  history         Json     // Array of message objects
+  status          Status   @default(PENDING)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId, brandId])
+}
+
+model KnowledgeChunk {
+  id        String   @id @default(uuid())
+  brandId   String   // saludflex, veganfood, domainhunter
+  content   String   @db.Text
+  // Usamos Unsupported para pgvector (Gemini text-embedding-004 tiene 768 dims)
+  embedding Unsupported("vector(3072)")? 
+  metadata  Json?    // Nombre del archivo, página, etc.
+  category  String?  // Ej: Comedor, Salud, General...
+  createdAt DateTime @default(now())
+
+  @@index([brandId])
+}

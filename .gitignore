@@ -1,0 +1,12 @@
+node_modules/
+.env
+/generated/prisma
+
+# Logs y archivos de debug
+error_log.txt
+all_models.json
+all_models_beta.json
+models_list.json
+
+# IDE
+*.code-workspace
