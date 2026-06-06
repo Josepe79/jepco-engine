@@ -11,8 +11,8 @@ const BRAND_ID = 'snfplus';
 
 const UPDATES = [
   {
-    category: 'salud',
-    content: 'Seguro de Salud: Es un contrato de póliza con duración de 12 meses. Requiere haber dado de alta a los familiares en el sistema previamente y disponer de una copia del DNI. El límite máximo de exención fiscal es de 500 € al año por persona (empleado, cónyuge e hijos de hasta 25 años incluidos). Si el empleado o algún familiar tiene reconocida una discapacidad, el límite sube a 1.500 € por persona. Para cualquier consulta sobre coberturas, condiciones o exclusiones de la póliza, hay que contactar directamente con el mediador.',
+    category: 'familiares',
+    content: 'Para dar de alta a familiares (cónyuge o hijos), accede al apartado "Familiares" en el menú de la aplicación y completa la información requerida. Es un paso obligatorio antes de poder contratar el seguro de salud o la guardería.',
   },
 ];
 

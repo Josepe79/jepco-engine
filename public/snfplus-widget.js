@@ -8,6 +8,7 @@
         brandId:   'snfplus',
         brandName: (_script && _script.getAttribute('data-env-label')) || 'SNF Plus',
         appUrl:    (_script && _script.getAttribute('data-app-url'))   || null,
+        mediador:  (_script && _script.getAttribute('data-mediador'))  || null,
         baseUrl: (function() {
             if (_script && _script.getAttribute('data-api-url')) {
                 return _script.getAttribute('data-api-url').replace(/\/$/, '');
@@ -514,7 +515,8 @@
                     brandId:  CONFIG.brandId,
                     userId:   CONFIG.userId,
                     category: category || null,
-                    appUrl:   CONFIG.appUrl || null
+                    appUrl:   CONFIG.appUrl  || null,
+                    mediador: CONFIG.mediador || null
                 })
             });
 

@@ -17,7 +17,7 @@ function stripMarkdown(text) {
 
 const genAI = new GoogleGenerativeAI(config.GEMINI_API_KEY, { apiVersion: 'v1' });
 
-async function getAIResponse(brandId, userMessage, history = [], category = null, appUrl = null) {
+async function getAIResponse(brandId, userMessage, history = [], category = null, appUrl = null, mediador = null) {
   const brand = config.BRANDS[brandId];
   if (!brand) throw new Error('Unknown brand');
 
@@ -51,7 +51,8 @@ async function getAIResponse(brandId, userMessage, history = [], category = null
   const systemInstruction = `
     Eres el asistente de ${brand.name}. ${brand.personality}
     Conocimiento base: ${brand.manual}
-    ${appUrl ? `URL de acceso a la aplicación: ${appUrl}` : ''}
+    ${appUrl    ? `URL de acceso a la aplicación: ${appUrl}` : ''}
+    ${mediador  ? `Mediador de seguros de este cliente: ${mediador}` : ''}
 
     INFORMACIÓN RECUPERADA (úsala si es relevante):
     ${context || 'Sin información adicional.'}
@@ -62,7 +63,7 @@ async function getAIResponse(brandId, userMessage, history = [], category = null
     3. Sin asteriscos, sin negritas, sin guiones, sin listas, sin títulos. Solo texto plano.
     4. No repitas la pregunta ni pongas introducciones del tipo "¡Claro!", "Por supuesto", "Es un placer", etc. Ve directo a la respuesta.
     5. Responde ÚNICAMENTE con lo que esté en la INFORMACIÓN RECUPERADA. No uses conocimiento propio sobre seguros, fiscalidad, productos financieros ni legislación. Si la información no está en el contexto, escala.
-    6. Si el usuario pregunta por coberturas, condiciones o exclusiones del seguro de salud, responde siempre que debe contactar con el mediador de la póliza.
+    6. Si el usuario pregunta por coberturas, condiciones o exclusiones del seguro de salud, responde siempre que debe contactar con ${mediador ? `el mediador: ${mediador}` : 'el mediador de la póliza'}.
     7. Si la pregunta es legal o compleja y no está en el manual, responde exactamente: "[ESCALAR_A_HUMANO] No tengo esa información ahora mismo, pero he avisado a un agente para que te contacte."
     8. Si no estás seguro o la información no aparece en el contexto, responde exactamente: "[ESCALAR_A_HUMANO] No tengo esa información ahora mismo, pero he avisado a un agente para que te contacte."
   `;
