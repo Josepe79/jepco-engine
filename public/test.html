@@ -35,7 +35,16 @@
         <p>Mira en la esquina inferior derecha... 😉</p>
     </div>
 
-    <!-- El widget detecta automáticamente la API desde el origen del script -->
-    <script src="https://jepco-engine-production.up.railway.app/public/snfplus-widget.js"></script>
+    <!--
+        Atributos disponibles:
+          data-api-url   → URL base del backend (auto-detectada si se omite)
+          data-app-url   → URL de la aplicación SNF+ de este entorno (muestra botón "Ir a la aplicación")
+          data-env-label → Nombre del entorno mostrado en el header del widget
+    -->
+    <script
+        src="https://jepco-engine-production.up.railway.app/public/snfplus-widget.js"
+        data-app-url="https://app.snfplus.com"
+        data-env-label="SNF Plus">
+    </script>
 </body>
 </html>

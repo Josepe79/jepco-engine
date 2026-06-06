@@ -6,7 +6,8 @@
 
     const CONFIG = {
         brandId:   'snfplus',
-        brandName: 'SNF Plus',
+        brandName: (_script && _script.getAttribute('data-env-label')) || 'SNF Plus',
+        appUrl:    (_script && _script.getAttribute('data-app-url'))   || null,
         baseUrl: (function() {
             if (_script && _script.getAttribute('data-api-url')) {
                 return _script.getAttribute('data-api-url').replace(/\/$/, '');
@@ -288,6 +289,13 @@
         .jepco-sub-btn:hover { background: ${CONFIG.primaryColor}; color: white; border-color: ${CONFIG.primaryColor}; }
         .jepco-back-btn { background: #eee !important; color: #333 !important; border-color: #ddd !important; }
         .jepco-back-btn:hover { background: #ddd !important; color: #333 !important; }
+        .jepco-app-btn {
+            background: ${CONFIG.primaryColor} !important;
+            border-color: ${CONFIG.primaryColor} !important;
+            color: white !important;
+            font-weight: 600;
+        }
+        .jepco-app-btn:hover { opacity: 0.88; }
     `;
 
     var styleSheet = document.createElement('style');
@@ -416,6 +424,9 @@
 
     function showMainMenu() {
         var html = '';
+        if (CONFIG.appUrl) {
+            html += '<button class="jepco-action-btn jepco-app-btn">Ir a la aplicación SNF+</button>';
+        }
         MAIN_MENU_ITEMS.forEach(function(label) {
             html += '<button class="jepco-action-btn">' + label + '</button>';
         });
@@ -451,6 +462,10 @@
     function bindMainButtons() {
         quickActions.querySelectorAll('.jepco-action-btn').forEach(function(btn) {
             btn.addEventListener('click', function() {
+                if (btn.classList.contains('jepco-app-btn')) {
+                    window.open(CONFIG.appUrl, '_blank', 'noopener,noreferrer');
+                    return;
+                }
                 var text = btn.textContent.trim();
                 if (text.includes('producto')) {
                     showProductSubmenu();
