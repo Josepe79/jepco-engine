@@ -1,46 +1,65 @@
 (function() {
-    // Capture currentScript synchronously before any async code runs
     const _script = document.currentScript;
 
-    // Auto-detect API URL from the script's src so the widget works in any environment
+    const GDPR_KEY  = 'jepco_snfplus_consent';
+    const UID_KEY   = 'jepco_snfplus_uid';
+
     const CONFIG = {
-        brandId: 'snfplus',
+        brandId:   'snfplus',
         brandName: 'SNF Plus',
-        apiUrl: (function() {
+        baseUrl: (function() {
             if (_script && _script.getAttribute('data-api-url')) {
-                return _script.getAttribute('data-api-url').replace(/\/$/, '') + '/api/chat';
+                return _script.getAttribute('data-api-url').replace(/\/$/, '');
             }
             if (_script && _script.src) {
-                try {
-                    return new URL(_script.src).origin + '/api/chat';
-                } catch (e) {}
+                try { return new URL(_script.src).origin; } catch (e) {}
             }
-            return '/api/chat';
+            return '';
         })(),
-        // Persist userId across page loads so conversation history is maintained.
-        // Uses crypto.randomUUID() for a cryptographically strong identifier.
         userId: (function() {
-            var key = 'jepco_snfplus_uid';
             try {
-                var id = localStorage.getItem(key);
+                var id = localStorage.getItem(UID_KEY);
                 if (!id) {
                     id = (crypto && crypto.randomUUID)
                         ? crypto.randomUUID()
                         : ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, function(c) {
                             return (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16);
                           });
-                    localStorage.setItem(key, id);
+                    localStorage.setItem(UID_KEY, id);
                 }
                 return id;
             } catch (e) {
                 return 'uid_' + Date.now().toString(36);
             }
         })(),
-        primaryColor: '#0047AB',
+        primaryColor:   '#0047AB',
         secondaryColor: '#f4f7f9',
-        botAvatar: 'https://cdn-icons-png.flaticon.com/512/4712/4712035.png',
-        userAvatar: 'https://cdn-icons-png.flaticon.com/512/1144/1144760.png'
     };
+
+    CONFIG.apiUrl    = CONFIG.baseUrl + '/api/chat';
+    CONFIG.deleteUrl = CONFIG.baseUrl + '/api/my-data/' + CONFIG.userId;
+
+    // ── Catálogos de opciones ──────────────────────────────────────────────────
+
+    var PRODUCTS = [
+        { label: 'Ahorro',      category: 'ahorro' },
+        { label: 'Comedor',     category: 'comida' },
+        { label: 'Formación',   category: 'formacion' },
+        { label: 'Guardería',   category: 'guarderia' },
+        { label: 'Transporte',  category: 'transporte' },
+        { label: 'Salud',       category: 'salud' },
+        { label: 'Renting',     category: 'renting' },
+    ];
+
+    var APP_SECTIONS = [
+        { label: 'Acceso y login',        category: 'acceso_navegacion', message: 'Como accedo a la aplicacion SNF+ y navego por ella' },
+        { label: 'Mi perfil',             category: 'perfil',            message: 'Como actualizo mi perfil personal en la aplicacion' },
+        { label: 'Gestionar familiares',  category: 'familiares',        message: 'Como doy de alta a familiares en la aplicacion' },
+        { label: 'Contratar un producto', category: 'productos_general', message: 'Como funciona el proceso de contratar un producto en la app' },
+        { label: 'Contrato de Novación',  category: 'contrato_novacion', message: 'Que es el contrato de novacion y cuando tengo que firmarlo' },
+    ];
+
+    // ── Estilos ────────────────────────────────────────────────────────────────
 
     var styles = `
         #jepco-chat-widget {
@@ -50,7 +69,6 @@
             z-index: 10000;
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
-
         #jepco-chat-bubble {
             width: 60px;
             height: 60px;
@@ -63,17 +81,8 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.2);
             transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-
-        #jepco-chat-bubble:hover {
-            transform: scale(1.1);
-        }
-
-        #jepco-chat-bubble svg {
-            width: 30px;
-            height: 30px;
-            fill: white;
-        }
-
+        #jepco-chat-bubble:hover { transform: scale(1.1); }
+        #jepco-chat-bubble svg { width: 30px; height: 30px; fill: white; }
         #jepco-chat-window {
             width: 380px;
             height: 600px;
@@ -88,12 +97,10 @@
             overflow: hidden;
             animation: jepco-slide-up 0.4s ease-out;
         }
-
         @keyframes jepco-slide-up {
             from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+            to   { opacity: 1; transform: translateY(0); }
         }
-
         #jepco-chat-header {
             background: ${CONFIG.primaryColor};
             color: white;
@@ -104,14 +111,7 @@
             flex-shrink: 0;
             gap: 10px;
         }
-
-        #jepco-chat-header h3 {
-            margin: 0;
-            font-size: 18px;
-            font-weight: 600;
-            flex: 1;
-        }
-
+        #jepco-chat-header h3 { margin: 0; font-size: 18px; font-weight: 600; flex: 1; }
         #jepco-menu-btn {
             background: rgba(255,255,255,0.2);
             border: 1px solid rgba(255,255,255,0.4);
@@ -123,11 +123,7 @@
             white-space: nowrap;
             transition: background 0.2s;
         }
-
-        #jepco-menu-btn:hover {
-            background: rgba(255,255,255,0.35);
-        }
-
+        #jepco-menu-btn:hover { background: rgba(255,255,255,0.35); }
         #jepco-chat-messages {
             flex: 1;
             min-height: 0;
@@ -138,7 +134,6 @@
             flex-direction: column;
             gap: 15px;
         }
-
         .jepco-msg {
             max-width: 80%;
             padding: 12px 16px;
@@ -146,7 +141,6 @@
             font-size: 14px;
             line-height: 1.5;
         }
-
         .jepco-msg-bot {
             align-self: flex-start;
             background: white;
@@ -154,14 +148,12 @@
             border-bottom-left-radius: 2px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
-
         .jepco-msg-user {
             align-self: flex-end;
             background: ${CONFIG.primaryColor};
             color: white;
             border-bottom-right-radius: 2px;
         }
-
         .jepco-typing-indicator {
             align-self: flex-start;
             background: white;
@@ -174,7 +166,6 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
             display: none;
         }
-
         #jepco-quick-actions {
             padding: 10px;
             display: flex;
@@ -186,16 +177,54 @@
             max-height: 230px;
             overflow-y: auto;
         }
-
+        #jepco-consent-panel {
+            padding: 16px 20px 20px;
+            background: white;
+            border-top: 1px solid #eee;
+            flex-shrink: 0;
+        }
+        #jepco-consent-panel h4 {
+            margin: 0 0 8px 0;
+            font-size: 14px;
+            color: #333;
+        }
+        #jepco-consent-panel p {
+            margin: 0 0 13px 0;
+            font-size: 12px;
+            color: #555;
+            line-height: 1.6;
+        }
+        .jepco-consent-btns { display: flex; gap: 8px; }
+        #jepco-consent-accept {
+            flex: 1;
+            background: ${CONFIG.primaryColor};
+            color: white;
+            border: none;
+            padding: 9px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        #jepco-consent-accept:hover { opacity: 0.88; }
+        #jepco-consent-reject {
+            flex: 1;
+            background: white;
+            color: #666;
+            border: 1px solid #ddd;
+            padding: 9px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+        }
         #jepco-chat-input-container {
-            padding: 15px;
+            padding: 12px 15px;
             background: white;
             border-top: 1px solid #eee;
             display: flex;
             gap: 10px;
             flex-shrink: 0;
         }
-
         #jepco-chat-input {
             flex: 1;
             border: 1px solid #ddd;
@@ -204,7 +233,6 @@
             outline: none;
             font-size: 14px;
         }
-
         #jepco-chat-send {
             background: ${CONFIG.primaryColor};
             color: white;
@@ -218,7 +246,23 @@
             justify-content: center;
             flex-shrink: 0;
         }
-
+        #jepco-gdpr-footer {
+            text-align: center;
+            padding: 3px 15px 6px;
+            background: white;
+            flex-shrink: 0;
+        }
+        #jepco-delete-link {
+            font-size: 11px;
+            color: #ccc;
+            text-decoration: none;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 0;
+            font-family: inherit;
+        }
+        #jepco-delete-link:hover { color: #999; text-decoration: underline; }
         .jepco-action-btn {
             background: white;
             border: 1px solid ${CONFIG.primaryColor};
@@ -230,32 +274,27 @@
             text-align: left;
             transition: all 0.2s;
         }
-
-        .jepco-action-btn:hover {
-            background: ${CONFIG.primaryColor};
-            color: white;
-        }
-
+        .jepco-action-btn:hover { background: ${CONFIG.primaryColor}; color: white; }
         .jepco-sub-btn {
             background: #fff;
             border: 1px solid #ddd;
-            padding: 6px;
+            padding: 6px 8px;
             border-radius: 8px;
             cursor: pointer;
             font-size: 12px;
+            text-align: left;
             transition: all 0.2s;
         }
-
-        .jepco-sub-btn:hover {
-            background: ${CONFIG.primaryColor};
-            color: white;
-            border-color: ${CONFIG.primaryColor};
-        }
+        .jepco-sub-btn:hover { background: ${CONFIG.primaryColor}; color: white; border-color: ${CONFIG.primaryColor}; }
+        .jepco-back-btn { background: #eee !important; color: #333 !important; border-color: #ddd !important; }
+        .jepco-back-btn:hover { background: #ddd !important; color: #333 !important; }
     `;
 
     var styleSheet = document.createElement('style');
     styleSheet.textContent = styles;
     document.head.appendChild(styleSheet);
+
+    // ── DOM ────────────────────────────────────────────────────────────────────
 
     var widgetContainer = document.createElement('div');
     widgetContainer.id = 'jepco-chat-widget';
@@ -266,12 +305,20 @@
         <div id="jepco-chat-window">
             <div id="jepco-chat-header">
                 <h3>${CONFIG.brandName} Support</h3>
-                <button id="jepco-menu-btn">☰ Opciones</button>
+                <button id="jepco-menu-btn">&#9776; Opciones</button>
                 <span id="jepco-close" style="cursor:pointer;font-size:22px;line-height:1">&times;</span>
             </div>
             <div id="jepco-chat-messages">
-                <div class="jepco-msg jepco-msg-bot">¡Hola! Soy el asistente de ${CONFIG.brandName}. ¿En qué puedo ayudarte hoy?</div>
+                <div class="jepco-msg jepco-msg-bot">Hola! Soy el asistente de ${CONFIG.brandName}. ¿En qué puedo ayudarte hoy?</div>
                 <div class="jepco-typing-indicator" id="jepco-typing">El asistente está escribiendo...</div>
+            </div>
+            <div id="jepco-consent-panel">
+                <h4>Aviso de privacidad</h4>
+                <p>Este asistente guarda tus mensajes para darte un servicio personalizado. Los datos se conservan durante 90 días y puedes borrarlos en cualquier momento. Al continuar aceptas el tratamiento de tus conversaciones conforme al RGPD.</p>
+                <div class="jepco-consent-btns">
+                    <button id="jepco-consent-accept">Aceptar y continuar</button>
+                    <button id="jepco-consent-reject">No, gracias</button>
+                </div>
             </div>
             <div id="jepco-quick-actions"></div>
             <div id="jepco-chat-input-container">
@@ -280,83 +327,171 @@
                     <svg style="width:20px;height:20px" viewBox="0 0 24 24" fill="white"><path d="M2,21L23,12L2,3V10L17,12L2,14V21Z"/></svg>
                 </button>
             </div>
+            <div id="jepco-gdpr-footer">
+                <button id="jepco-delete-link">Borrar mis datos</button>
+            </div>
         </div>
     `;
     document.body.appendChild(widgetContainer);
 
-    var bubble = document.getElementById('jepco-chat-bubble');
-    var chatWindow = document.getElementById('jepco-chat-window');
-    var closeBtn = document.getElementById('jepco-close');
-    var menuBtn = document.getElementById('jepco-menu-btn');
-    var input = document.getElementById('jepco-chat-input');
-    var sendBtn = document.getElementById('jepco-chat-send');
+    var bubble            = document.getElementById('jepco-chat-bubble');
+    var chatWindow        = document.getElementById('jepco-chat-window');
+    var closeBtn          = document.getElementById('jepco-close');
+    var menuBtn           = document.getElementById('jepco-menu-btn');
+    var input             = document.getElementById('jepco-chat-input');
+    var sendBtn           = document.getElementById('jepco-chat-send');
     var messagesContainer = document.getElementById('jepco-chat-messages');
-    var typingIndicator = document.getElementById('jepco-typing');
-    var quickActions = document.getElementById('jepco-quick-actions');
+    var typingIndicator   = document.getElementById('jepco-typing');
+    var quickActions      = document.getElementById('jepco-quick-actions');
+    var consentPanel      = document.getElementById('jepco-consent-panel');
+    var inputContainer    = document.getElementById('jepco-chat-input-container');
+    var gdprFooter        = document.getElementById('jepco-gdpr-footer');
 
-    // ── Menu management ────────────────────────────────────────────────────────
+    // ── RGPD ───────────────────────────────────────────────────────────────────
 
-    var MAIN_MENU_HTML = `
-        <button class="jepco-action-btn">1- ¿Dudas con la retribución flexible en general?</button>
-        <button class="jepco-action-btn">2- ¿Dudas con la retribución flexible de un producto?</button>
-        <button class="jepco-action-btn">3- ¿Dudas con la aplicación?</button>
-    `;
+    function hasConsent() {
+        try {
+            var c = localStorage.getItem(GDPR_KEY);
+            if (!c) return false;
+            var parsed = JSON.parse(c);
+            return parsed && parsed.accepted === true;
+        } catch (e) { return false; }
+    }
 
-    var PRODUCT_SUBMENU_HTML = `
-        <div style="font-size:12px; margin-bottom:5px; color:#666">Elige un producto:</div>
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px;">
-            <button class="jepco-sub-btn">Ahorro</button>
-            <button class="jepco-sub-btn">Comedor</button>
-            <button class="jepco-sub-btn">Formación</button>
-            <button class="jepco-sub-btn">Guardería</button>
-            <button class="jepco-sub-btn">Transporte</button>
-            <button class="jepco-sub-btn">Salud</button>
-            <button class="jepco-sub-btn" style="grid-column: span 2; background:#eee; color:#333">⬅ Volver</button>
-        </div>
-    `;
+    function storeConsent() {
+        try {
+            localStorage.setItem(GDPR_KEY, JSON.stringify({
+                accepted: true,
+                timestamp: new Date().toISOString()
+            }));
+        } catch (e) {}
+    }
+
+    function showConsentPanel() {
+        consentPanel.style.display  = 'block';
+        quickActions.style.display  = 'none';
+        inputContainer.style.display = 'none';
+        gdprFooter.style.display    = 'none';
+    }
+
+    function acceptConsent() {
+        storeConsent();
+        consentPanel.style.display  = 'none';
+        inputContainer.style.display = 'flex';
+        gdprFooter.style.display    = 'block';
+        showMainMenu();
+    }
+
+    document.getElementById('jepco-consent-accept').addEventListener('click', acceptConsent);
+
+    document.getElementById('jepco-consent-reject').addEventListener('click', function() {
+        consentPanel.innerHTML = '<p style="text-align:center;color:#666;font-size:13px;padding:16px 0">Para usar el chat es necesario aceptar el aviso de privacidad.</p>';
+    });
+
+    document.getElementById('jepco-delete-link').addEventListener('click', function() {
+        if (!confirm('¿Seguro? Esto borrará tu historial de conversaciones. Esta acción no se puede deshacer.')) return;
+        fetch(CONFIG.deleteUrl, { method: 'DELETE' })
+            .then(function() {
+                try {
+                    localStorage.removeItem(UID_KEY);
+                    localStorage.removeItem(GDPR_KEY);
+                } catch (e) {}
+                addMessage('Tus datos han sido eliminados. Cierra y vuelve a abrir el chat para comenzar de nuevo.', 'bot');
+                quickActions.style.display   = 'none';
+                inputContainer.style.display = 'none';
+                gdprFooter.style.display     = 'none';
+            })
+            .catch(function() {
+                addMessage('No se pudieron eliminar los datos. Inténtalo de nuevo más tarde.', 'bot');
+            });
+    });
+
+    // ── Menús ──────────────────────────────────────────────────────────────────
+
+    var MAIN_MENU_ITEMS = [
+        'Dudas sobre la retribución flexible',
+        'Dudas sobre un producto específico',
+        'Dudas con la aplicación',
+    ];
 
     function showMainMenu() {
-        quickActions.innerHTML = MAIN_MENU_HTML;
+        var html = '';
+        MAIN_MENU_ITEMS.forEach(function(label) {
+            html += '<button class="jepco-action-btn">' + label + '</button>';
+        });
+        quickActions.innerHTML = html;
         quickActions.style.display = 'flex';
         bindMainButtons();
     }
 
     function showProductSubmenu() {
-        quickActions.innerHTML = PRODUCT_SUBMENU_HTML;
-        bindSubButtons();
+        var html = '<div style="font-size:12px; margin-bottom:5px; color:#666">Elige un producto:</div>';
+        html += '<div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px;">';
+        PRODUCTS.forEach(function(p) {
+            html += '<button class="jepco-sub-btn" data-category="' + p.category + '">' + p.label + '</button>';
+        });
+        html += '<button class="jepco-sub-btn jepco-back-btn" style="grid-column: span 2">&#8592; Volver</button>';
+        html += '</div>';
+        quickActions.innerHTML = html;
+        bindProductSubButtons();
+    }
+
+    function showAppSubmenu() {
+        var html = '<div style="font-size:12px; margin-bottom:5px; color:#666">¿Sobre qué sección?</div>';
+        html += '<div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px;">';
+        APP_SECTIONS.forEach(function(s) {
+            html += '<button class="jepco-sub-btn" data-category="' + s.category + '" data-msg="' + s.message + '">' + s.label + '</button>';
+        });
+        html += '<button class="jepco-sub-btn jepco-back-btn" style="grid-column: span 2">&#8592; Volver</button>';
+        html += '</div>';
+        quickActions.innerHTML = html;
+        bindAppSubButtons();
     }
 
     function bindMainButtons() {
         quickActions.querySelectorAll('.jepco-action-btn').forEach(function(btn) {
             btn.addEventListener('click', function() {
                 var text = btn.textContent.trim();
-                if (text.includes('un producto')) {
+                if (text.includes('producto')) {
                     showProductSubmenu();
+                } else if (text.includes('aplicación') || text.includes('aplicacion')) {
+                    showAppSubmenu();
                 } else {
                     input.value = text;
                     quickActions.style.display = 'none';
-                    sendMessage();
+                    sendMessage(null);
                 }
             });
         });
     }
 
-    function bindSubButtons() {
-        quickActions.querySelectorAll('.jepco-sub-btn').forEach(function(subBtn) {
-            subBtn.addEventListener('click', function() {
-                if (subBtn.textContent.includes('Volver')) {
-                    showMainMenu();
-                    return;
-                }
-                var product = subBtn.textContent.trim();
-                input.value = 'Tengo dudas sobre el producto: ' + product;
+    function bindProductSubButtons() {
+        quickActions.querySelectorAll('.jepco-sub-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                if (btn.classList.contains('jepco-back-btn')) { showMainMenu(); return; }
+                var category = btn.getAttribute('data-category');
+                var label    = btn.textContent.trim();
+                input.value = 'Tengo dudas sobre el producto: ' + label;
                 quickActions.style.display = 'none';
-                sendMessage(product.toLowerCase());
+                sendMessage(category);
             });
         });
     }
 
-    // ── Chat logic ─────────────────────────────────────────────────────────────
+    function bindAppSubButtons() {
+        quickActions.querySelectorAll('.jepco-sub-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                if (btn.classList.contains('jepco-back-btn')) { showMainMenu(); return; }
+                var category = btn.getAttribute('data-category');
+                var msg      = btn.getAttribute('data-msg');
+                input.value = msg;
+                quickActions.style.display = 'none';
+                sendMessage(category);
+            });
+        });
+    }
+
+    // ── Chat ───────────────────────────────────────────────────────────────────
 
     async function sendMessage(category) {
         var text = input.value.trim();
@@ -365,7 +500,6 @@
         addMessage(text, 'user');
         input.value = '';
 
-        // Move typing indicator after last message and show it
         messagesContainer.appendChild(typingIndicator);
         typingIndicator.style.display = 'block';
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
@@ -375,9 +509,9 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    message: text,
-                    brandId: CONFIG.brandId,
-                    userId: CONFIG.userId,
+                    message:  text,
+                    brandId:  CONFIG.brandId,
+                    userId:   CONFIG.userId,
                     category: category || null
                 })
             });
@@ -397,15 +531,19 @@
         var msgDiv = document.createElement('div');
         msgDiv.className = 'jepco-msg jepco-msg-' + sender;
         msgDiv.textContent = text;
-        // Insert before the typing indicator so it always stays last
         messagesContainer.insertBefore(msgDiv, typingIndicator);
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
 
-    // ── Event listeners ────────────────────────────────────────────────────────
+    // ── Eventos ────────────────────────────────────────────────────────────────
 
     bubble.addEventListener('click', function() {
-        chatWindow.style.display = chatWindow.style.display === 'flex' ? 'none' : 'flex';
+        if (chatWindow.style.display === 'flex') {
+            chatWindow.style.display = 'none';
+        } else {
+            chatWindow.style.display = 'flex';
+            if (!hasConsent()) showConsentPanel();
+        }
     });
 
     closeBtn.addEventListener('click', function() {
@@ -413,16 +551,26 @@
     });
 
     menuBtn.addEventListener('click', function() {
-        showMainMenu();
+        if (hasConsent()) showMainMenu();
     });
 
-    sendBtn.addEventListener('click', function() { sendMessage(); });
+    sendBtn.addEventListener('click', function() { sendMessage(null); });
 
     input.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') sendMessage();
+        if (e.key === 'Enter') sendMessage(null);
     });
 
-    // Initialize main menu
-    showMainMenu();
+    // ── Init ───────────────────────────────────────────────────────────────────
+
+    if (hasConsent()) {
+        consentPanel.style.display   = 'none';
+        gdprFooter.style.display     = 'block';
+        showMainMenu();
+    } else {
+        consentPanel.style.display   = 'block';
+        quickActions.style.display   = 'none';
+        inputContainer.style.display = 'none';
+        gdprFooter.style.display     = 'none';
+    }
 
 })();

@@ -195,12 +195,53 @@ fastify.post('/upload', async (request, reply) => {
   }
 });
 
+// ── RGPD ───────────────────────────────────────────────────────────────────────
+
+/**
+ * Elimina conversaciones con más de 90 días (retención RGPD).
+ * Se ejecuta al arrancar el servidor.
+ */
+async function cleanupOldConversations() {
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - 90);
+  try {
+    const result = await db.conversation.deleteMany({
+      where: { updatedAt: { lt: cutoff } }
+    });
+    if (result.count > 0) {
+      console.log(`RGPD cleanup: ${result.count} conversaciones eliminadas (>90 días)`);
+    }
+  } catch (err) {
+    console.error('RGPD cleanup error:', err.message);
+  }
+}
+
+/**
+ * Derecho al olvido (Art. 17 RGPD).
+ * El usuario puede borrar sus propias conversaciones usando el userId almacenado
+ * en su localStorage. No requiere auth ya que el UUID sólo lo conoce el propio usuario.
+ */
+fastify.delete('/api/my-data/:userId', async (request, reply) => {
+  const { userId } = request.params;
+  if (!userId || userId.length < 8) {
+    return reply.status(400).send({ error: 'Invalid userId' });
+  }
+  try {
+    await db.conversation.deleteMany({ where: { userId } });
+    return { message: 'Tus datos han sido eliminados correctamente.' };
+  } catch (err) {
+    fastify.log.error(err);
+    return reply.status(500).send({ error: 'Error al eliminar datos' });
+  }
+});
+
 // ── Start ──────────────────────────────────────────────────────────────────────
 
 const start = async () => {
   try {
     await fastify.listen({ port: config.PORT, host: '0.0.0.0' });
     console.log(`Server listening on ${fastify.server.address().port}`);
+    await cleanupOldConversations();
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);
