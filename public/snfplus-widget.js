@@ -5,7 +5,7 @@
     const UID_KEY   = 'jepco_snfplus_uid';
 
     const CONFIG = {
-        brandId:   'snfplus',
+        brandId:   (_script && _script.getAttribute('data-brand-id')) || 'snfplus_usuario',
         brandName: (_script && _script.getAttribute('data-env-label')) || 'SNF+',
         appUrl:    (_script && _script.getAttribute('data-app-url'))   || null,
         mediador:  (_script && _script.getAttribute('data-mediador'))  || null,
