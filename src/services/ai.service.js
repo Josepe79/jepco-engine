@@ -49,33 +49,32 @@ async function getAIResponse(brandId, userMessage, history = [], category = null
     console.error('Error retrieving context:', err);
   }
 
-  const model = genAI.getGenerativeModel({ 
+  const systemInstruction = `Eres el asistente de ${brand.name}. ${brand.personality}
+Conocimiento base: ${brand.manual}
+${safeAppUrl   ? `URL de acceso a la aplicación: ${safeAppUrl}` : ''}
+${safeMediador ? `Mediador de seguros de este cliente: ${safeMediador}` : ''}
+
+INFORMACIÓN RECUPERADA (úsala si es relevante):
+${context || 'Sin información adicional.'}
+
+REGLAS DE RESPUESTA — síguelas siempre sin excepción:
+1. Máximo 2-3 frases cortas. Nunca más.
+2. Lenguaje simple y directo, como si respondieras por WhatsApp.
+3. Sin asteriscos, sin negritas, sin guiones, sin listas, sin títulos. Solo texto plano.
+4. No repitas la pregunta ni pongas introducciones del tipo "¡Claro!", "Por supuesto", "Es un placer", etc. Ve directo a la respuesta.
+5. Responde ÚNICAMENTE con lo que esté en la INFORMACIÓN RECUPERADA. No uses conocimiento propio sobre seguros, fiscalidad, productos financieros ni legislación. Si la información no está en el contexto, escala.
+6. Si el usuario pregunta por coberturas, condiciones o exclusiones del seguro de salud, responde siempre que debe contactar con ${safeMediador ? `el mediador: ${safeMediador}` : 'el mediador de la póliza'}.
+7. Si la pregunta es legal o compleja y no está en el manual, responde exactamente: "[ESCALAR_A_HUMANO] No tengo esa información ahora mismo, pero he avisado a un agente para que te contacte."
+8. Si no estás seguro o la información no aparece en el contexto, responde exactamente: "[ESCALAR_A_HUMANO] No tengo esa información ahora mismo, pero he avisado a un agente para que te contacte."`;
+
+  const model = genAI.getGenerativeModel({
     model: 'gemini-2.5-flash-lite',
+    systemInstruction,
     generationConfig: {
-      maxOutputTokens: 2048,
-      temperature: 0.7,
+      maxOutputTokens: 150,
+      temperature: 0.5,
     }
   }, { apiVersion: 'v1beta' });
-
-  const systemInstruction = `
-    Eres el asistente de ${brand.name}. ${brand.personality}
-    Conocimiento base: ${brand.manual}
-    ${safeAppUrl   ? `URL de acceso a la aplicación: ${safeAppUrl}` : ''}
-    ${safeMediador ? `Mediador de seguros de este cliente: ${safeMediador}` : ''}
-
-    INFORMACIÓN RECUPERADA (úsala si es relevante):
-    ${context || 'Sin información adicional.'}
-
-    REGLAS DE RESPUESTA — síguelas siempre sin excepción:
-    1. Máximo 2-3 frases cortas. Nunca más.
-    2. Lenguaje simple y directo, como si respondieras por WhatsApp.
-    3. Sin asteriscos, sin negritas, sin guiones, sin listas, sin títulos. Solo texto plano.
-    4. No repitas la pregunta ni pongas introducciones del tipo "¡Claro!", "Por supuesto", "Es un placer", etc. Ve directo a la respuesta.
-    5. Responde ÚNICAMENTE con lo que esté en la INFORMACIÓN RECUPERADA. No uses conocimiento propio sobre seguros, fiscalidad, productos financieros ni legislación. Si la información no está en el contexto, escala.
-    6. Si el usuario pregunta por coberturas, condiciones o exclusiones del seguro de salud, responde siempre que debe contactar con ${safeMediador ? `el mediador: ${safeMediador}` : 'el mediador de la póliza'}.
-    7. Si la pregunta es legal o compleja y no está en el manual, responde exactamente: "[ESCALAR_A_HUMANO] No tengo esa información ahora mismo, pero he avisado a un agente para que te contacte."
-    8. Si no estás seguro o la información no aparece en el contexto, responde exactamente: "[ESCALAR_A_HUMANO] No tengo esa información ahora mismo, pero he avisado a un agente para que te contacte."
-  `;
 
   // Format history for Gemini
   const chatHistory = history.map(msg => ({
@@ -85,16 +84,11 @@ async function getAIResponse(brandId, userMessage, history = [], category = null
 
   const chat = model.startChat({
     history: chatHistory,
-    generationConfig: {
-      maxOutputTokens: 150,
-      temperature: 0.5,
-    },
   });
 
-  const prompt = `${systemInstruction}\n\nMensaje del usuario: ${userMessage}`;
   let result;
   try {
-    result = await chat.sendMessage(prompt);
+    result = await chat.sendMessage(userMessage);
   } catch (geminiError) {
     const msg = geminiError.message || '';
     if (msg.includes('429') || msg.includes('quota') || msg.includes('Too Many Requests')) {
@@ -114,7 +108,7 @@ async function getAIResponse(brandId, userMessage, history = [], category = null
 
   const rawText = result.response.text();
   const shouldEscalate = rawText.includes('[ESCALAR_A_HUMANO]');
-  const cleanText = stripMarkdown(rawText.replace('[ESCALAR_A_HUMANO]', ''));
+  const cleanText = stripMarkdown(rawText.replaceAll('[ESCALAR_A_HUMANO]', ''));
 
   return {
     text: cleanText,
