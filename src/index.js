@@ -24,6 +24,9 @@ const ALLOWED_CATEGORIES = new Set([
   'administracion_empresas_sucursales', 'administracion_grupos',
   'importacion_y_actualizacion_masiva', 'gestion_usuarios',
   'seguimiento_planes', 'informes',
+  // snfplus_gestor
+  'onboarding_companias', 'administrar_companias', 'resumen_salud',
+  'control_companias', 'contrataciones',
 ]);
 const MAX_MESSAGE_LENGTH = 1000;
 

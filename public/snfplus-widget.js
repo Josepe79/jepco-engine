@@ -71,6 +71,14 @@
         { label: 'Informes de nómina',    category: 'informes',                        message: 'Como genero y descargo informes de nomina en Excel' },
     ];
 
+    var GESTOR_SECTIONS = [
+        { label: 'Onboarding compañías',  category: 'onboarding_companias',  message: 'Como realizo el alta y configuracion inicial de una nueva empresa en la plataforma' },
+        { label: 'Administrar compañías', category: 'administrar_companias', message: 'Como gestiono y edito los datos de empresas registradas en el sistema' },
+        { label: 'Resumen Salud',         category: 'resumen_salud',         message: 'Como consulto informes y estadisticas de los seguros de salud' },
+        { label: 'Control compañías',     category: 'control_companias',     message: 'Como superviso y monitorizo la actividad de las companias en la plataforma' },
+        { label: 'Contrataciones',        category: 'contrataciones',        message: 'Como gestiono y reviso las solicitudes de productos de retribucion flexible' },
+    ];
+
     // ── Estilos ────────────────────────────────────────────────────────────────
 
     var styles = `
@@ -500,10 +508,14 @@
     ];
 
     function showMainMenu() {
-        if (CONFIG.brandId === 'snfplus_rrhh') {
+        var profileSections = CONFIG.brandId === 'snfplus_rrhh'   ? RRHH_SECTIONS
+                            : CONFIG.brandId === 'snfplus_gestor' ? GESTOR_SECTIONS
+                            : null;
+
+        if (profileSections) {
             var html = '<div style="font-size:12px; margin-bottom:5px; color:#666">¿En qué puedo ayudarte?</div>';
             html += '<div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px;">';
-            RRHH_SECTIONS.forEach(function(s) {
+            profileSections.forEach(function(s) {
                 html += '<button class="jepco-sub-btn" data-category="' + s.category + '" data-msg="' + s.message + '">' + s.label + '</button>';
             });
             html += '</div>';
