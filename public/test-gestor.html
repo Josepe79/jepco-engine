@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test SNF+ Gestor Widget</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f2f5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            color: #333;
+        }
+        .container {
+            text-align: center;
+            max-width: 600px;
+            padding: 40px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        }
+        h1 { color: #0047AB; }
+        .badge {
+            display: inline-block;
+            background: #e8f0fe;
+            color: #0047AB;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin-bottom: 16px;
+        }
+        p { color: #666; line-height: 1.6; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="badge">Perfil: Gestor</div>
+        <h1>Simulación Web SNF+ Gestor</h1>
+        <p>Página de prueba para el widget del perfil Gestor. Permite el onboarding de compañías, administración, control, resumen de salud y gestión de contrataciones.</p>
+        <p>Mira en la esquina inferior derecha... 😉</p>
+    </div>
+
+    <script
+        src="https://jepco-engine-production.up.railway.app/public/snfplus-widget.js"
+        data-brand-id="snfplus_gestor"
+        data-app-url="https://app.snfplus.com"
+        data-env-label="SNF+ Gestor">
+    </script>
+</body>
+</html>
