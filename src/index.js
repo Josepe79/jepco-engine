@@ -19,7 +19,7 @@ const ALLOWED_CATEGORIES = new Set([
   // snfplus_usuario
   'acceso_navegacion', 'perfil', 'familiares', 'productos_general',
   'ahorro', 'salud', 'guarderia', 'comida', 'transporte',
-  'formacion', 'renting', 'contrato_novacion',
+  'formacion', 'renting', 'contrato_novacion', 'retribucion_general',
   // snfplus_rrhh
   'administracion_empresas_sucursales', 'administracion_grupos',
   'importacion_y_actualizacion_masiva', 'gestion_usuarios',

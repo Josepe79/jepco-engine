@@ -7,12 +7,12 @@ const crypto = require('crypto');
 const vectorService = require('../src/services/vector.service');
 const prisma = require('../src/services/db.service');
 
-const BRAND_ID = 'snfplus';
+const BRAND_ID = 'snfplus_usuario';
 
 const UPDATES = [
   {
-    category: 'familiares',
-    content: 'Para dar de alta a familiares (cónyuge o hijos), accede al apartado "Familiares" en el menú de la aplicación y completa la información requerida. Es un paso obligatorio antes de poder contratar el seguro de salud o la guardería.',
+    category: 'retribucion_general',
+    content: 'La retribución flexible de SNF+ te permite destinar parte de tu salario a productos con ventajas fiscales. Los productos disponibles son: Ahorro, Comedor, Formación, Guardería, Transporte, Salud y Renting. La retribución en especie no puede superar el 30% de tu salario bruto anual.',
   },
 ];
 

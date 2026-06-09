@@ -566,9 +566,10 @@
                 } else if (text.includes('aplicación') || text.includes('aplicacion')) {
                     showAppSubmenu();
                 } else {
+                    var cat = (text.includes('retribución') || text.includes('retribucion')) ? 'retribucion_general' : null;
                     input.value = text;
                     quickActions.style.display = 'none';
-                    sendMessage(null);
+                    sendMessage(cat);
                 }
             });
         });
