@@ -16,9 +16,14 @@ const aiService = require('./services/ai.service');
 
 const ALLOWED_BRANDS     = new Set(Object.keys(config.BRANDS));
 const ALLOWED_CATEGORIES = new Set([
+  // snfplus_usuario
   'acceso_navegacion', 'perfil', 'familiares', 'productos_general',
   'ahorro', 'salud', 'guarderia', 'comida', 'transporte',
-  'formacion', 'renting', 'contrato_novacion'
+  'formacion', 'renting', 'contrato_novacion',
+  // snfplus_rrhh
+  'administracion_empresas_sucursales', 'administracion_grupos',
+  'importacion_y_actualizacion_masiva', 'gestion_usuarios',
+  'seguimiento_planes', 'informes',
 ]);
 const MAX_MESSAGE_LENGTH = 1000;
 
