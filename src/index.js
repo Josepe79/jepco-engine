@@ -90,6 +90,15 @@ fastify.get('/health', async () => {
   return { status: 'ok', timestamp: new Date() };
 });
 
+// Endpoint de diagnóstico — lista ficheros del directorio public
+fastify.get('/debug/public-files', async (request, reply) => {
+  const blocked = validateUploadSecret(request, reply);
+  if (blocked) return;
+  const fs = require('fs');
+  const publicDir = path.join(__dirname, '../public');
+  return { dir: publicDir, files: fs.readdirSync(publicDir) };
+});
+
 // Endpoint de diagnóstico — protegido con UPLOAD_SECRET
 fastify.get('/debug/chat-test', async (request, reply) => {
   const blocked = validateUploadSecret(request, reply);
