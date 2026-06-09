@@ -61,6 +61,16 @@
         { label: 'Contrato de Novación',  category: 'contrato_novacion', message: 'Que es el contrato de novacion y cuando tengo que firmarlo' },
     ];
 
+    var RRHH_SECTIONS = [
+        { label: 'Acceso y login',        category: 'acceso_navegacion',               message: 'Como accedo a la aplicacion SNF+ como responsable de RRHH' },
+        { label: 'Empresas y sucursales', category: 'administracion_empresas_sucursales', message: 'Como gestiono empresas y sucursales en la plataforma' },
+        { label: 'Grupos de trabajo',     category: 'administracion_grupos',           message: 'Como creo y gestiono grupos de trabajadores' },
+        { label: 'Importación masiva',    category: 'importacion_y_actualizacion_masiva', message: 'Como importo o actualizo empleados de forma masiva con Excel' },
+        { label: 'Gestión de empleados',  category: 'gestion_usuarios',                message: 'Como anado, edito o doy de baja a un empleado' },
+        { label: 'Seguimiento de planes', category: 'seguimiento_planes',              message: 'Como hago seguimiento de los planes y aprobaciones pendientes' },
+        { label: 'Informes de nómina',    category: 'informes',                        message: 'Como genero y descargo informes de nomina en Excel' },
+    ];
+
     // ── Estilos ────────────────────────────────────────────────────────────────
 
     var styles = `
@@ -490,6 +500,18 @@
     ];
 
     function showMainMenu() {
+        if (CONFIG.brandId === 'snfplus_rrhh') {
+            var html = '<div style="font-size:12px; margin-bottom:5px; color:#666">¿En qué puedo ayudarte?</div>';
+            html += '<div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px;">';
+            RRHH_SECTIONS.forEach(function(s) {
+                html += '<button class="jepco-sub-btn" data-category="' + s.category + '" data-msg="' + s.message + '">' + s.label + '</button>';
+            });
+            html += '</div>';
+            quickActions.innerHTML = html;
+            quickActions.style.display = 'flex';
+            bindAppSubButtons();
+            return;
+        }
         var html = '';
         MAIN_MENU_ITEMS.forEach(function(label) {
             html += '<button class="jepco-action-btn">' + label + '</button>';

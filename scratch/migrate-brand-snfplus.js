@@ -6,27 +6,26 @@
  */
 
 require('dotenv').config();
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require('../src/services/db.service');
 
 async function main() {
   console.log('Iniciando migración snfplus → snfplus_usuario...\n');
 
   // Chunks de conocimiento
   const chunks = await prisma.$executeRaw`
-    UPDATE knowledge_chunks
+    UPDATE "KnowledgeChunk"
     SET "brandId" = 'snfplus_usuario'
     WHERE "brandId" = 'snfplus'
   `;
-  console.log(`knowledge_chunks actualizados: ${chunks}`);
+  console.log(`KnowledgeChunk actualizados: ${chunks}`);
 
   // Conversaciones
   const convs = await prisma.$executeRaw`
-    UPDATE conversations
+    UPDATE "Conversation"
     SET "brandId" = 'snfplus_usuario'
     WHERE "brandId" = 'snfplus'
   `;
-  console.log(`conversations actualizadas: ${convs}`);
+  console.log(`Conversation actualizadas: ${convs}`);
 
   console.log('\nMigración completada.');
 }
