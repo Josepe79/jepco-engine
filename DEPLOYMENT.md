@@ -252,7 +252,71 @@ Al añadir una categoría nueva hay que darla de alta en `ALLOWED_CATEGORIES`
 
 ---
 
-## 8. Protección de datos
+## 8. Telemetría y mejora del bot
+
+### Qué se registra
+
+Cada intercambio deja una fila en `Interaction` con el porqué de la respuesta,
+no solo el texto:
+
+| Campo | Para qué sirve |
+|---|---|
+| `category` | Categoría enviada por el widget. `null` = el usuario escribió a mano. |
+| `categoryFallback` | La categoría pedida no tenía contenido y hubo que buscar en el fondo general. |
+| `chunksFound` | `0` significa que no hay nada parecido en el conocimiento. |
+| `topSimilarity` | Similitud del mejor fragmento (0–1). Bajo = existe contenido pero no encaja. |
+| `chunkIds` | Qué fragmentos se usaron. Revela cuáles cargan el peso y cuáles no se usan nunca. |
+| `escalated` | Inmutable, a diferencia de `Conversation.status`. |
+| `latencyMs` | Tiempo total de respuesta. |
+
+Es una tabla aparte de `Conversation.history` a propósito: `history` guarda el
+diálogo para dárselo a la IA; esto guarda el diagnóstico.
+
+**El registro nunca puede tumbar una conversación.** `recordInteraction()` traga
+sus propios errores: si falla, se pierde esa fila y el usuario no se entera.
+
+### Detectar patrones
+
+```bash
+node scratch/patterns.js                  # 7 días, todas las marcas
+node scratch/patterns.js snfplus_rrhh     # una marca
+node scratch/patterns.js snfplus_rrhh 30  # una marca, 30 días
+```
+
+Cada patrón apunta a un fallo distinto, y cada uno se corrige de forma distinta:
+
+| Patrón | Qué significa | Cómo se corrige |
+|---|---|---|
+| **Hueco total** | La búsqueda no encontró nada | Falta el fragmento: escribirlo |
+| **Match débil** | Encontró algo pero encaja mal | Reescribir con el vocabulario que usa la gente |
+| **Categoría vacía** | El botón apunta a la nada | Mapeo incorrecto, o falta contenido en esa categoría |
+| **Escalado** | La IA se rindió | Hueco confirmado, máxima prioridad |
+| **Reformulación** | Repreguntó en menos de 90s | La respuesta no convenció |
+| **Fragmento muerto** | Nunca se recupera | Sobra, o está redactado de forma que no matchea |
+| **Texto libre** | Escribió en vez de usar el menú | El menú de botones no cubre ese caso |
+
+### El límite de las métricas
+
+Los patrones detectan fallos **de recuperación**. No detectan fallos **de
+fidelidad**: que la IA recupere el fragmento correcto y aun así responda con
+conocimiento propio.
+
+Ejemplo real observado durante las pruebas:
+
+> **Pregunta:** «¿Puedo deducir esto en la declaración de la renta?»
+> **Recuperación:** 3 fragmentos, similitud 0.717, sin escalado
+> **Respuesta:** *«…se reduce la cuota tributaria a pagar»* — extrapolación
+> desde la Ley del IRPF, no del manual.
+
+Todas las métricas salen sanas. Solo se ve leyendo la respuesta.
+
+Por eso la revisión humana debe centrarse, contra toda intuición, en los
+intercambios de **similitud alta que no escalaron** — no en los que fallaron de
+forma evidente.
+
+---
+
+## 9. Protección de datos
 
 | Medida | Implementación |
 |---|---|
@@ -266,7 +330,7 @@ de privacidad y en su registro de actividades de tratamiento.
 
 ---
 
-## 9. Endpoints
+## 10. Endpoints
 
 ### Públicos
 
@@ -291,7 +355,7 @@ filtrar información por diferencias de tiempo de respuesta.
 
 ---
 
-## 10. Notas operativas
+## 11. Notas operativas
 
 **El widget no está versionado.** El cliente apunta directamente a
 `/public/snfplus-widget.js`, así que cualquier despliegue entra en su producción

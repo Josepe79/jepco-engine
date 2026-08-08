@@ -35,10 +35,60 @@ model KnowledgeChunk {
   brandId   String   // saludflex, veganfood, domainhunter
   content   String   @db.Text
   // Usamos Unsupported para pgvector (Gemini text-embedding-004 tiene 768 dims)
-  embedding Unsupported("vector(3072)")? 
+  embedding Unsupported("vector(3072)")?
   metadata  Json?    // Nombre del archivo, página, etc.
   category  String?  // Ej: Comedor, Salud, General...
   createdAt DateTime @default(now())
 
   @@index([brandId])
+}
+
+/// Un registro por intercambio pregunta/respuesta.
+///
+/// Existe separado de Conversation.history porque persigue otra cosa: history
+/// guarda el diálogo para dárselo a la IA, esto guarda *por qué* la respuesta
+/// salió como salió, para poder detectar patrones y corregir el conocimiento.
+///
+/// Nota sobre el escalado: en Conversation el estado se sobrescribe en cada
+/// mensaje, así que un escalado seguido de una pregunta resuelta desaparecía
+/// del registro. Aquí cada intercambio es inmutable y el escalado no se pierde.
+model Interaction {
+  id             String  @id @default(uuid())
+  brandId        String
+  /// Permite secuenciar los mensajes de una misma sesión (detectar
+  /// reformulaciones) sin necesidad de guardar la identidad del usuario.
+  conversationId String?
+
+  question String @db.Text
+  answer   String @db.Text
+
+  /// Categoría que envió el widget. Null = el usuario escribió texto libre,
+  /// lo que revela qué no cubre el menú de botones.
+  category String?
+
+  // ── Qué encontró la búsqueda semántica ────────────────────────────────────
+
+  /// True si la categoría pedida no devolvió nada y hubo que buscar en el
+  /// fondo general. Señala una categoría sin contenido o mal mapeada.
+  categoryFallback Boolean @default(false)
+  /// 0 = hueco total: no hay nada en el conocimiento que se parezca.
+  chunksFound      Int     @default(0)
+  /// Similitud del mejor fragmento (0-1). Un valor bajo significa que existe
+  /// contenido pero no encaja con cómo la gente formula la pregunta.
+  topSimilarity    Float?
+  /// IDs de los fragmentos usados. Permite ver cuáles cargan con el trabajo y
+  /// cuáles no se recuperan nunca.
+  chunkIds         Json?
+
+  // ── Cómo acabó ────────────────────────────────────────────────────────────
+
+  escalated Boolean @default(false)
+  latencyMs Int?
+
+  createdAt DateTime @default(now())
+
+  @@index([brandId, createdAt])
+  @@index([brandId, escalated])
+  @@index([brandId, category])
+  @@index([conversationId, createdAt])
 }

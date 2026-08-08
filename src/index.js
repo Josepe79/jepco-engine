@@ -374,7 +374,21 @@ function registerRoutes() {
       return reply.status(400).send({ error: 'Invalid userId' });
     }
     try {
+      // La telemetría se enlaza por conversationId, no por userId, así que hay
+      // que resolver las conversaciones antes de borrarlas.
+      const conversations = await db.conversation.findMany({
+        where:  { userId },
+        select: { id: true },
+      });
+      const conversationIds = conversations.map(c => c.id);
+
+      if (conversationIds.length > 0) {
+        await db.interaction.deleteMany({
+          where: { conversationId: { in: conversationIds } },
+        });
+      }
       await db.conversation.deleteMany({ where: { userId } });
+
       return { message: 'Tus datos han sido eliminados correctamente.' };
     } catch (err) {
       fastify.log.error(err);
@@ -386,21 +400,38 @@ function registerRoutes() {
 // ── RGPD ───────────────────────────────────────────────────────────────────────
 
 /**
- * Elimina conversaciones con más de 90 días (política de retención).
+ * Elimina datos con más de 90 días (política de retención).
  * Se ejecuta una vez al arrancar el servidor.
+ *
+ * Cubre también la telemetría de interacciones: contiene el texto literal de
+ * las preguntas, así que se rige por la misma ventana. El aprendizaje que sale
+ * de esos datos debe consolidarse en fragmentos de conocimiento antes de que
+ * caduquen — que es justo el flujo de trabajo previsto.
  */
-async function cleanupOldConversations() {
+async function cleanupOldData() {
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - 90);
+
   try {
-    const result = await db.conversation.deleteMany({
+    const conversations = await db.conversation.deleteMany({
       where: { updatedAt: { lt: cutoff } },
     });
-    if (result.count > 0) {
-      fastify.log.info(`RGPD: ${result.count} conversaciones eliminadas (>90 días)`);
+    if (conversations.count > 0) {
+      fastify.log.info(`RGPD: ${conversations.count} conversaciones eliminadas (>90 días)`);
     }
   } catch (err) {
-    fastify.log.error({ err }, 'Fallo en la limpieza RGPD');
+    fastify.log.error({ err }, 'Fallo en la limpieza de conversaciones');
+  }
+
+  try {
+    const interactions = await db.interaction.deleteMany({
+      where: { createdAt: { lt: cutoff } },
+    });
+    if (interactions.count > 0) {
+      fastify.log.info(`RGPD: ${interactions.count} interacciones eliminadas (>90 días)`);
+    }
+  } catch (err) {
+    fastify.log.error({ err }, 'Fallo en la limpieza de interacciones');
   }
 }
 
@@ -425,7 +456,7 @@ const start = async () => {
       fastify.log.info(`CORS restringido a: ${CORS_RULES.join(', ')}`);
     }
 
-    await cleanupOldConversations();
+    await cleanupOldData();
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);

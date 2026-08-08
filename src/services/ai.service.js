@@ -30,20 +30,37 @@ async function getAIResponse(brandId, userMessage, history = [], category = null
   const safeAppUrl   = sanitizeParam(appUrl, 200);
   const safeMediador = sanitizeParam(mediador, 150);
 
-  // 1. Obtener contexto relevante de la base de conocimientos
+  // 1. Obtener contexto relevante de la base de conocimientos.
+  //
+  // `retrieval` acompaña a la respuesta para poder registrar POR QUÉ salió como
+  // salió. Sin esto, un fallo solo se ve como "el bot contestó mal", sin saber
+  // si faltaba el fragmento, si existía pero no encajaba, o si la categoría
+  // estaba mal mapeada.
   let context = '';
+  const retrieval = {
+    categoryFallback: false,
+    chunksFound:      0,
+    topSimilarity:    null,
+    chunkIds:         [],
+  };
+
   try {
     const queryEmbedding = await vectorService.generateEmbedding(userMessage);
     let similarChunks = await vectorService.findSimilarDocuments(brandId, queryEmbedding, 3, category);
-    
-    // Si no hay resultados en la categoría específica, buscar en la general
+
+    // Si la categoría pedida no devuelve nada, se reintenta sin filtro.
+    // Que esto ocurra es en sí una señal: esa categoría no tiene contenido.
     if (similarChunks.length === 0 && category !== null) {
-      console.log(`>>> No context for ${category}, falling back to general...`);
+      retrieval.categoryFallback = true;
       similarChunks = await vectorService.findSimilarDocuments(brandId, queryEmbedding, 3, null);
     }
-    
+
     if (similarChunks.length > 0) {
       context = similarChunks.map(c => c.content).join('\n---\n');
+      retrieval.chunksFound   = similarChunks.length;
+      retrieval.chunkIds      = similarChunks.map(c => c.id);
+      // La similitud viene del propio pgvector: 1 - distancia coseno
+      retrieval.topSimilarity = Number(similarChunks[0].similarity);
     }
   } catch (err) {
     console.error('Error retrieving context:', err);
@@ -94,13 +111,17 @@ REGLAS DE RESPUESTA — síguelas siempre sin excepción:
     if (msg.includes('429') || msg.includes('quota') || msg.includes('Too Many Requests')) {
       return {
         text: 'En este momento el asistente está recibiendo muchas consultas. Por favor, inténtalo de nuevo en unos segundos.',
-        shouldEscalate: false
+        shouldEscalate: false,
+        retrieval,
+        degraded: 'quota',
       };
     }
     if (msg.includes('503') || msg.includes('Service Unavailable')) {
       return {
         text: 'El asistente no está disponible temporalmente. Por favor, inténtalo de nuevo en unos minutos.',
-        shouldEscalate: false
+        shouldEscalate: false,
+        retrieval,
+        degraded: 'unavailable',
       };
     }
     throw geminiError;
@@ -112,7 +133,8 @@ REGLAS DE RESPUESTA — síguelas siempre sin excepción:
 
   return {
     text: cleanText,
-    shouldEscalate
+    shouldEscalate,
+    retrieval,
   };
 }
 

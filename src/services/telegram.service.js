@@ -39,7 +39,22 @@ Object.entries(config.BOT_TOKENS).forEach(([brandId, token]) => {
   }
 });
 
+/**
+ * Registra un intercambio para análisis posterior.
+ *
+ * Nunca lanza: la telemetría no puede tumbar una conversación. Si falla, se
+ * pierde ese registro y el usuario ni se entera.
+ */
+async function recordInteraction(data) {
+  try {
+    await db.interaction.create({ data });
+  } catch (err) {
+    console.error('No se pudo registrar la interacción:', err.message);
+  }
+}
+
 async function handleMessage(brandId, platform, userId, text, ctx = null, category = null, appUrl = null, mediador = null) {
+  const startedAt = Date.now();
   try {
     // 1. Get or create conversation
     let conversation = await db.conversation.findFirst({
@@ -69,10 +84,28 @@ async function handleMessage(brandId, platform, userId, text, ctx = null, catego
 
     await db.conversation.update({
       where: { id: conversation.id },
-      data: { 
+      data: {
         history,
         status: aiResult.shouldEscalate ? 'ESCALATED' : 'PENDING'
       }
+    });
+
+    // 4b. Registrar el intercambio con la telemetría de recuperación.
+    //     A diferencia de `status`, esto es inmutable: un escalado queda
+    //     registrado aunque la siguiente pregunta se resuelva bien.
+    const r = aiResult.retrieval || {};
+    await recordInteraction({
+      brandId,
+      conversationId:   conversation.id,
+      question:         text,
+      answer:           aiResult.text,
+      category:         category || null,
+      categoryFallback: Boolean(r.categoryFallback),
+      chunksFound:      r.chunksFound   ?? 0,
+      topSimilarity:    r.topSimilarity ?? null,
+      chunkIds:         r.chunkIds      ?? [],
+      escalated:        Boolean(aiResult.shouldEscalate),
+      latencyMs:        Date.now() - startedAt,
     });
 
     // 5. Send response to user — always plain text to avoid Telegram entity parse errors
