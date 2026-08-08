@@ -1,18 +1,44 @@
-const fastify = require('fastify')({ logger: true, trustProxy: true });
-const crypto = require('crypto');
-const config = require('./config');
-const telegram = require('./services/telegram.service');
-const db = require('./services/db.service');
-const cors = require('@fastify/cors');
-const helmet = require('@fastify/helmet');
-const rateLimit = require('@fastify/rate-limit');
-const multipart = require('@fastify/multipart');
-const fastifyStatic = require('@fastify/static');
-const path = require('path');
-const ingestionService = require('./services/ingestion.service');
-const aiService = require('./services/ai.service');
+/**
+ * Jepco Engine — servidor principal.
+ *
+ * ORDEN DE ARRANQUE (importante, no reordenar sin leer esto)
+ * ──────────────────────────────────────────────────────────
+ * Fastify aplica los hooks `onRequest` únicamente a las rutas que se registran
+ * DESPUÉS de que el hook exista. `fastify.register()` es diferido: encola el
+ * plugin y no lo carga hasta `listen()`/`ready()`.
+ *
+ * Por eso, si las rutas se declaran a nivel de módulo (como estaba antes), el
+ * plugin de rate limit todavía no ha instalado su hook cuando esas rutas entran
+ * en el árbol, y el límite NUNCA se aplica — ni el global ni el `config.rateLimit`
+ * de cada ruta. El síntoma es que las peticiones pasan todas y no aparece ninguna
+ * cabecera `x-ratelimit-*`.
+ *
+ * La solución es la secuencia de `start()`:
+ *   1. await registerPlugins()   → los hooks quedan instalados
+ *   2. registerRoutes()          → las rutas heredan esos hooks
+ *   3. await fastify.listen()
+ */
 
-// ── Validación de inputs ────────────────────────────────────────────────────────
+const fastify = require('fastify')({
+  logger: true,
+  // Railway sirve detrás de un proxy. Sin esto, `req.ip` devuelve la IP interna
+  // del proxy y todos los visitantes comparten la misma clave de rate limit.
+  trustProxy: true,
+});
+
+const crypto        = require('crypto');
+const path          = require('path');
+const config        = require('./config');
+const telegram      = require('./services/telegram.service');
+const db            = require('./services/db.service');
+const cors          = require('@fastify/cors');
+const helmet        = require('@fastify/helmet');
+const rateLimit     = require('@fastify/rate-limit');
+const multipart     = require('@fastify/multipart');
+const fastifyStatic = require('@fastify/static');
+const ingestionService = require('./services/ingestion.service');
+
+// ── Validación de inputs ───────────────────────────────────────────────────────
 
 const ALLOWED_BRANDS     = new Set(Object.keys(config.BRANDS));
 const ALLOWED_CATEGORIES = new Set([
@@ -30,8 +56,75 @@ const ALLOWED_CATEGORIES = new Set([
 ]);
 const MAX_MESSAGE_LENGTH = 1000;
 
+// ── CORS ───────────────────────────────────────────────────────────────────────
+
+/**
+ * Política de orígenes, resuelta una sola vez al arrancar.
+ *
+ * CORS_ORIGINS admite:
+ *   - '*'                          → cualquier origen (solo para desarrollo)
+ *   - 'https://app.ejemplo.com'    → origen exacto
+ *   - '*.ejemplo.com'              → cualquier subdominio de ejemplo.com
+ *   - varios valores separados por coma
+ *
+ * Nota: esto NO afecta a la carga del widget. Una etiqueta <script src> no pasa
+ * por CORS, así que `/public/snfplus-widget.js` se sigue sirviendo a cualquiera.
+ * Lo que se protege son las llamadas a /api/*, que son las que cuestan dinero.
+ */
+const CORS_ALLOW_ALL = config.CORS_ORIGINS.trim() === '*';
+const CORS_RULES = CORS_ALLOW_ALL
+  ? []
+  : config.CORS_ORIGINS.split(',').map(o => o.trim()).filter(Boolean);
+
+function isOriginAllowed(origin) {
+  let host;
+  try {
+    host = new URL(origin).host;
+  } catch {
+    return false; // Origin malformado
+  }
+
+  return CORS_RULES.some(rule => {
+    if (rule.startsWith('*.')) {
+      const bare = rule.slice(2);           // '*.ejemplo.com' → 'ejemplo.com'
+      return host === bare || host.endsWith(`.${bare}`);
+    }
+    // Comparación por origen completo (esquema + host + puerto)
+    try {
+      return new URL(rule).origin === new URL(origin).origin;
+    } catch {
+      return rule === origin;
+    }
+  });
+}
+
+/**
+ * Decide si una petición concreta puede pasar la política de orígenes.
+ *
+ * Se permite en tres casos:
+ *   - Ficheros estáticos: el widget debe poder cargarse desde cualquier web.
+ *   - Sin cabecera Origin: no hay contexto de navegador (health checks de
+ *     Railway, curl, llamadas servidor a servidor). CORS solo protege al
+ *     navegador, así que bloquear aquí no aportaría seguridad.
+ *   - Origen incluido en CORS_ORIGINS.
+ */
+function isRequestOriginAllowed(request) {
+  if (request.url.startsWith('/public/')) return true;
+
+  const origin = request.headers.origin;
+  if (!origin) return true;
+  if (CORS_ALLOW_ALL) return true;
+
+  return isOriginAllowed(origin);
+}
+
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
+/**
+ * Valida el header Authorization contra UPLOAD_SECRET en tiempo constante.
+ * Devuelve un valor truthy si la petición ha sido rechazada (el llamante debe
+ * hacer `return` inmediatamente).
+ */
 function validateUploadSecret(request, reply) {
   const auth = request.headers['authorization'];
   if (!config.UPLOAD_SECRET) {
@@ -41,7 +134,7 @@ function validateUploadSecret(request, reply) {
     return reply.status(401).send({ error: 'Unauthorized' });
   }
   // Comparación en tiempo constante para evitar timing attacks
-  const expected = `Bearer ${config.UPLOAD_SECRET}`;
+  const expected    = `Bearer ${config.UPLOAD_SECRET}`;
   const authBuf     = Buffer.from(auth.padEnd(expected.length));
   const expectedBuf = Buffer.from(expected);
   if (authBuf.length !== expectedBuf.length || !crypto.timingSafeEqual(authBuf, expectedBuf)) {
@@ -51,250 +144,287 @@ function validateUploadSecret(request, reply) {
 
 // ── Plugins ────────────────────────────────────────────────────────────────────
 
-// Cabeceras de seguridad HTTP (X-Content-Type-Options, Referrer-Policy, etc.)
-fastify.register(helmet, { global: true });
+/**
+ * Registra todos los plugins y ESPERA a que estén cargados.
+ * El `await` es lo que garantiza que sus hooks existan antes de las rutas.
+ */
+async function registerPlugins() {
+  // Cabeceras de seguridad HTTP (CSP, X-Content-Type-Options, HSTS, etc.)
+  await fastify.register(helmet);
 
-fastify.register(fastifyStatic, {
-  root: path.join(__dirname, '../public'),
-  prefix: '/public/',
-});
+  await fastify.register(fastifyStatic, {
+    root:   path.join(__dirname, '../public'),
+    prefix: '/public/',
+  });
 
-fastify.register(multipart, {
-  limits: { fileSize: 50 * 1024 * 1024 }
-});
+  await fastify.register(multipart, {
+    limits: { fileSize: 50 * 1024 * 1024 },
+  });
 
-// CORS: configurable vía CORS_ORIGINS (coma-separado). Por defecto '*' para
-// permitir que el widget se incruste en cualquier dominio de cliente.
-fastify.register(cors, {
-  origin: (origin, cb) => {
-    const allowed = config.CORS_ORIGINS;
-    if (allowed === '*') return cb(null, true);
-    const list = allowed.split(',').map(o => o.trim());
-    if (!origin || list.includes(origin)) return cb(null, true);
-    cb(new Error('Not allowed by CORS'), false);
-  }
-});
+  // El plugin gestiona el preflight y las cabeceras Access-Control-*.
+  // Se usa la forma delegada para poder mirar la URL además del origen.
+  await fastify.register(cors, () => (req, cb) => {
+    cb(null, { origin: isRequestOriginAllowed(req) });
+  });
 
-// Rate limiting — global:true con límite alto de base; las rutas sensibles
-// lo reducen con su propio config.rateLimit.
-fastify.register(rateLimit, {
-  global: true,
-  max: 120,
-  timeWindow: '1 minute',
-  keyGenerator: (req) => req.ip,
-});
+  // Cortafuegos explícito sobre /api/*.
+  //
+  // El plugin de CORS por sí solo se limita a no enviar las cabeceras, y es el
+  // navegador quien bloquea la respuesta — pero el servidor ya habría hecho el
+  // trabajo, incluida la llamada de pago a Gemini. Este hook corta antes.
+  fastify.addHook('onRequest', async (request, reply) => {
+    if (!request.url.startsWith('/api/')) return;
+    if (isRequestOriginAllowed(request)) return;
+
+    fastify.log.warn(
+      { origin: request.headers.origin, url: request.url },
+      'CORS: petición rechazada'
+    );
+    return reply.status(403).send({ error: 'Origin not allowed' });
+  });
+
+  // Rate limiting global. Es la red de seguridad de base; las rutas sensibles
+  // bajan el límite con su propio `config.rateLimit`.
+  await fastify.register(rateLimit, {
+    global:       true,
+    max:          config.RATE_LIMIT_GLOBAL_MAX,
+    timeWindow:   '1 minute',
+    // Con trustProxy activo, `req.ip` es la IP real del cliente (X-Forwarded-For).
+    keyGenerator: (req) => req.ip,
+  });
+}
 
 // ── Rutas ──────────────────────────────────────────────────────────────────────
 
-fastify.get('/health', async () => {
-  return { status: 'ok', timestamp: new Date() };
-});
-
-// Endpoint de diagnóstico — protegido con UPLOAD_SECRET
-fastify.get('/debug/chat-test', async (request, reply) => {
-  const blocked = validateUploadSecret(request, reply);
-  if (blocked) return;
-  try {
-    const aiService = require('./services/ai.service');
-    const result = await aiService.getAIResponse('snfplus', 'hola', []);
-    return { status: 'ok', reply: result.text };
-  } catch (err) {
-    return reply.status(500).send({ status: 'error', message: err.message, type: err.constructor.name });
-  }
-});
-
 /**
- * Web Chat — endpoint público del widget.
- * Rate limit: RATE_LIMIT_MAX req/min por IP (default 30).
+ * Declara las rutas. Debe llamarse DESPUÉS de `registerPlugins()` — ver la nota
+ * de orden de arranque en la cabecera del fichero.
  */
-fastify.post('/api/chat', {
-  config: {
-    rateLimit: {
-      max: config.RATE_LIMIT_MAX,
-      timeWindow: '1 minute',
-      errorResponseBuilder: () => ({
-        statusCode: 429,
-        error: 'Too Many Requests',
-        message: 'Has enviado demasiados mensajes. Espera un momento e inténtalo de nuevo.'
-      })
+function registerRoutes() {
+
+  fastify.get('/health', async () => {
+    return { status: 'ok', timestamp: new Date() };
+  });
+
+  /**
+   * Web Chat — endpoint público del widget.
+   * Rate limit: RATE_LIMIT_MAX peticiones/minuto por IP (por defecto 30).
+   */
+  fastify.post('/api/chat', {
+    config: {
+      rateLimit: {
+        max:        config.RATE_LIMIT_MAX,
+        timeWindow: '1 minute',
+        errorResponseBuilder: () => ({
+          statusCode: 429,
+          error:      'Too Many Requests',
+          message:    'Has enviado demasiados mensajes. Espera un momento e inténtalo de nuevo.',
+        }),
+      },
+    },
+  }, async (request, reply) => {
+    const { brandId, userId, message, category, appUrl, mediador } = request.body || {};
+
+    if (!brandId || !userId || !message) {
+      return reply.status(400).send({ error: 'Missing required fields' });
     }
-  }
-}, async (request, reply) => {
-  const { brandId, userId, message, category, appUrl, mediador } = request.body;
+    if (!ALLOWED_BRANDS.has(brandId)) {
+      return reply.status(400).send({ error: 'Invalid brandId' });
+    }
+    if (message.length > MAX_MESSAGE_LENGTH) {
+      return reply.status(400).send({ error: 'Message too long' });
+    }
+    if (category && !ALLOWED_CATEGORIES.has(category)) {
+      return reply.status(400).send({ error: 'Invalid category' });
+    }
 
-  if (!brandId || !userId || !message) {
-    return reply.status(400).send({ error: 'Missing required fields' });
-  }
-  if (!ALLOWED_BRANDS.has(brandId)) {
-    return reply.status(400).send({ error: 'Invalid brandId' });
-  }
-  if (message.length > MAX_MESSAGE_LENGTH) {
-    return reply.status(400).send({ error: 'Message too long' });
-  }
-  if (category && !ALLOWED_CATEGORIES.has(category)) {
-    return reply.status(400).send({ error: 'Invalid category' });
-  }
+    try {
+      const result = await telegram.handleMessage(
+        brandId, 'WEB', userId, message, null, category, appUrl, mediador
+      );
+      return {
+        reply:  result.text,
+        status: result.shouldEscalate ? 'escalated' : 'ok',
+      };
+    } catch (error) {
+      fastify.log.error(error);
+      return reply.status(500).send({ error: 'Internal server error' });
+    }
+  });
 
-  try {
-    const result = await telegram.handleMessage(brandId, 'WEB', userId, message, null, category, appUrl, mediador);
-    return {
-      reply: result.text,
-      status: result.shouldEscalate ? 'escalated' : 'ok'
-    };
-  } catch (error) {
-    fastify.log.error(error);
-    return reply.status(500).send({ error: 'Internal server error' });
-  }
-});
+  /**
+   * Historial de conversación — protegido con UPLOAD_SECRET.
+   * Endpoint de administración, no expuesto al widget.
+   */
+  fastify.get('/api/history/:brandId/:userId', async (request, reply) => {
+    const blocked = validateUploadSecret(request, reply);
+    if (blocked) return;
 
-/**
- * Historial de conversación — protegido con UPLOAD_SECRET.
- * Endpoint de administración, no expuesto al widget.
- */
-fastify.get('/api/history/:brandId/:userId', async (request, reply) => {
-  const blocked = validateUploadSecret(request, reply);
-  if (blocked) return;
+    const { brandId, userId } = request.params;
+    try {
+      const conversation = await db.conversation.findFirst({
+        where: { brandId, userId },
+      });
+      return conversation ? conversation.history : [];
+    } catch (error) {
+      fastify.log.error(error);
+      return reply.status(500).send({ error: 'Internal server error' });
+    }
+  });
 
-  const { brandId, userId } = request.params;
-  try {
-    const conversation = await db.conversation.findFirst({
-      where: { brandId, userId }
-    });
-    return conversation ? conversation.history : [];
-  } catch (error) {
-    return reply.status(500).send({ error: 'Internal server error' });
-  }
-});
+  /**
+   * Diagnóstico de la cadena RAG + Gemini — protegido con UPLOAD_SECRET.
+   */
+  fastify.get('/debug/chat-test', async (request, reply) => {
+    const blocked = validateUploadSecret(request, reply);
+    if (blocked) return;
+    try {
+      const aiService = require('./services/ai.service');
+      const result = await aiService.getAIResponse('snfplus_usuario', 'hola', []);
+      return { status: 'ok', reply: result.text };
+    } catch (err) {
+      fastify.log.error(err);
+      return reply.status(500).send({ status: 'error', message: err.message });
+    }
+  });
 
-/**
- * Subida de conocimiento — protegido con UPLOAD_SECRET.
- */
-fastify.post('/api/knowledge/upload', async (request, reply) => {
-  const blocked = validateUploadSecret(request, reply);
-  if (blocked) return;
+  /**
+   * Subida de conocimiento vía formulario — protegido con UPLOAD_SECRET.
+   */
+  fastify.post('/api/knowledge/upload', async (request, reply) => {
+    const blocked = validateUploadSecret(request, reply);
+    if (blocked) return;
 
-  const data = await request.file();
-  if (!data) {
-    return reply.status(400).send({ error: 'No file uploaded' });
-  }
-
-  const { brandId } = data.fields;
-  if (!brandId || !brandId.value) {
-    return reply.status(400).send({ error: 'Missing brandId' });
-  }
-
-  try {
-    const buffer = await data.toBuffer();
-    const result = await ingestionService.processFile(
-      brandId.value,
-      buffer,
-      data.filename,
-      data.mimetype
-    );
-    return result;
-  } catch (error) {
-    const fs = require('fs');
-    fs.appendFileSync('error_log.txt', `\n[${new Date().toISOString()}] UPLOAD ERROR: ${error.stack || error.message}\n`);
-    fastify.log.error(error);
-    return reply.status(500).send({ error: 'Error processing file' });
-  }
-});
-
-/**
- * Endpoint de subida directo (CLI/API) — protegido con UPLOAD_SECRET.
- */
-fastify.post('/upload', async (request, reply) => {
-  const blocked = validateUploadSecret(request, reply);
-  if (blocked) return;
-
-  console.log('>>> Upload request received');
-  try {
     const data = await request.file();
     if (!data) {
       return reply.status(400).send({ error: 'No file uploaded' });
     }
 
-    console.log(`>>> Receiving file: ${data.filename}`);
-    const brandId = data.fields.brandId ? data.fields.brandId.value : 'snfplus';
-    const category = data.fields.category ? data.fields.category.value : null;
-    console.log(`>>> Brand ID: ${brandId}, Category: ${category}`);
-
-    const chunks = [];
-    for await (const chunk of data.file) {
-      chunks.push(chunk);
+    const { brandId } = data.fields;
+    if (!brandId || !brandId.value) {
+      return reply.status(400).send({ error: 'Missing brandId' });
     }
-    const buffer = Buffer.concat(chunks);
-    console.log(`>>> Buffer created: ${buffer.length} bytes`);
 
-    const result = await ingestionService.processFile(brandId, buffer, data.filename, data.mimetype, category);
-    console.log('>>> Ingestion successful');
-    return result;
-  } catch (error) {
-    console.error('!!! CRITICAL UPLOAD ERROR:', error);
-    const fs = require('fs');
-    fs.appendFileSync('error_log.txt', `\n[${new Date().toISOString()}] UPLOAD CRASH: ${error.stack}\n`);
-    return reply.status(500).send({ error: 'Error processing file' });
-  }
-});
+    try {
+      const buffer = await data.toBuffer();
+      return await ingestionService.processFile(
+        brandId.value, buffer, data.filename, data.mimetype
+      );
+    } catch (error) {
+      fastify.log.error({ err: error }, 'Error procesando fichero de conocimiento');
+      return reply.status(500).send({ error: 'Error processing file' });
+    }
+  });
+
+  /**
+   * Subida de conocimiento vía CLI/API — protegido con UPLOAD_SECRET.
+   * Acepta `category` para clasificar el contenido.
+   */
+  fastify.post('/upload', async (request, reply) => {
+    const blocked = validateUploadSecret(request, reply);
+    if (blocked) return;
+
+    try {
+      const data = await request.file();
+      if (!data) {
+        return reply.status(400).send({ error: 'No file uploaded' });
+      }
+
+      const brandId  = data.fields.brandId  ? data.fields.brandId.value  : 'snfplus_usuario';
+      const category = data.fields.category ? data.fields.category.value : null;
+      fastify.log.info({ filename: data.filename, brandId, category }, 'Ingesta iniciada');
+
+      const chunks = [];
+      for await (const chunk of data.file) chunks.push(chunk);
+      const buffer = Buffer.concat(chunks);
+
+      const result = await ingestionService.processFile(
+        brandId, buffer, data.filename, data.mimetype, category
+      );
+      fastify.log.info('Ingesta completada');
+      return result;
+    } catch (error) {
+      fastify.log.error({ err: error }, 'Fallo crítico en la ingesta');
+      return reply.status(500).send({ error: 'Error processing file' });
+    }
+  });
+
+  /**
+   * Derecho de supresión (Art. 17 RGPD).
+   *
+   * No lleva autenticación porque el identificador solo lo conoce el propio
+   * usuario: es su UUID de localStorage. El límite de 5/minuto evita que alguien
+   * pueda barrer identificadores a fuerza bruta.
+   */
+  fastify.delete('/api/my-data/:userId', {
+    config: {
+      rateLimit: {
+        max:        5,
+        timeWindow: '1 minute',
+        errorResponseBuilder: () => ({
+          statusCode: 429,
+          error:      'Too Many Requests',
+          message:    'Demasiadas solicitudes. Espera un momento e inténtalo de nuevo.',
+        }),
+      },
+    },
+  }, async (request, reply) => {
+    const { userId } = request.params;
+    if (!userId || userId.length < 8) {
+      return reply.status(400).send({ error: 'Invalid userId' });
+    }
+    try {
+      await db.conversation.deleteMany({ where: { userId } });
+      return { message: 'Tus datos han sido eliminados correctamente.' };
+    } catch (err) {
+      fastify.log.error(err);
+      return reply.status(500).send({ error: 'Error al eliminar datos' });
+    }
+  });
+}
 
 // ── RGPD ───────────────────────────────────────────────────────────────────────
 
 /**
- * Elimina conversaciones con más de 90 días (retención RGPD).
- * Se ejecuta al arrancar el servidor.
+ * Elimina conversaciones con más de 90 días (política de retención).
+ * Se ejecuta una vez al arrancar el servidor.
  */
 async function cleanupOldConversations() {
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - 90);
   try {
     const result = await db.conversation.deleteMany({
-      where: { updatedAt: { lt: cutoff } }
+      where: { updatedAt: { lt: cutoff } },
     });
     if (result.count > 0) {
-      console.log(`RGPD cleanup: ${result.count} conversaciones eliminadas (>90 días)`);
+      fastify.log.info(`RGPD: ${result.count} conversaciones eliminadas (>90 días)`);
     }
   } catch (err) {
-    console.error('RGPD cleanup error:', err.message);
+    fastify.log.error({ err }, 'Fallo en la limpieza RGPD');
   }
 }
 
-/**
- * Derecho al olvido (Art. 17 RGPD).
- * El usuario puede borrar sus propias conversaciones usando el userId almacenado
- * en su localStorage. No requiere auth ya que el UUID sólo lo conoce el propio usuario.
- */
-fastify.delete('/api/my-data/:userId', {
-  config: {
-    rateLimit: {
-      max: 5,
-      timeWindow: '1 minute',
-      errorResponseBuilder: () => ({
-        statusCode: 429,
-        error: 'Too Many Requests',
-        message: 'Demasiadas solicitudes. Espera un momento e inténtalo de nuevo.'
-      })
-    }
-  }
-}, async (request, reply) => {
-  const { userId } = request.params;
-  if (!userId || userId.length < 8) {
-    return reply.status(400).send({ error: 'Invalid userId' });
-  }
-  try {
-    await db.conversation.deleteMany({ where: { userId } });
-    return { message: 'Tus datos han sido eliminados correctamente.' };
-  } catch (err) {
-    fastify.log.error(err);
-    return reply.status(500).send({ error: 'Error al eliminar datos' });
-  }
-});
-
-// ── Start ──────────────────────────────────────────────────────────────────────
+// ── Arranque ───────────────────────────────────────────────────────────────────
 
 const start = async () => {
   try {
+    await registerPlugins();   // 1. hooks instalados
+    registerRoutes();          // 2. rutas heredan los hooks
     await fastify.listen({ port: config.PORT, host: '0.0.0.0' });
-    console.log(`Server listening on ${fastify.server.address().port}`);
+
+    fastify.log.info(
+      `Rate limit — global: ${config.RATE_LIMIT_GLOBAL_MAX}/min · /api/chat: ${config.RATE_LIMIT_MAX}/min · borrado: 5/min`
+    );
+
+    if (CORS_ALLOW_ALL) {
+      fastify.log.warn(
+        'CORS abierto a cualquier origen. Define CORS_ORIGINS con los dominios ' +
+        'reales antes de exponer el servicio a usuarios finales.'
+      );
+    } else {
+      fastify.log.info(`CORS restringido a: ${CORS_RULES.join(', ')}`);
+    }
+
     await cleanupOldConversations();
   } catch (err) {
     fastify.log.error(err);

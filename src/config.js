@@ -1,24 +1,68 @@
 require('dotenv').config();
 
+/**
+ * Configuración central.
+ *
+ * Todas las variables se leen de entorno. En local se cargan desde `.env`;
+ * en Railway se definen en el panel del servicio.
+ * La lista completa y qué hace cada una está en DEPLOYMENT.md.
+ */
 module.exports = {
-  PORT: process.env.PORT || 3000,
+  PORT:         process.env.PORT || 3000,
   DATABASE_URL: process.env.DATABASE_URL,
+
   GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+
+  // Bot de Telegram que recibe los avisos de escalado a humano
   ADMIN_TELEGRAM_CHAT_ID: process.env.ADMIN_TELEGRAM_CHAT_ID,
-  ADMIN_BOT_TOKEN: process.env.ADMIN_BOT_TOKEN,
+  ADMIN_BOT_TOKEN:        process.env.ADMIN_BOT_TOKEN,
+
+  // Secreto compartido para los endpoints de administración e ingesta
   UPLOAD_SECRET: process.env.UPLOAD_SECRET,
-  // Orígenes CORS permitidos, separados por coma. '*' permite cualquier dominio.
+
+  /**
+   * Orígenes autorizados a llamar a /api/*, separados por coma.
+   *
+   *   '*'                        cualquiera (SOLO desarrollo)
+   *   'https://app.ejemplo.com'  origen exacto
+   *   '*.ejemplo.com'            cualquier subdominio
+   *
+   * No afecta a la carga del widget: <script src> no pasa por CORS.
+   */
   CORS_ORIGINS: process.env.CORS_ORIGINS || '*',
-  // Máximo de peticiones por minuto por IP en /api/chat
-  RATE_LIMIT_MAX: parseInt(process.env.RATE_LIMIT_MAX || '30', 10),
+
+  /**
+   * Límites de peticiones por minuto y por IP.
+   *
+   *   RATE_LIMIT_MAX         → /api/chat, la ruta que consume cuota de Gemini
+   *   RATE_LIMIT_GLOBAL_MAX  → red de seguridad para el resto de rutas
+   *
+   * El endpoint de borrado RGPD tiene su propio límite fijo de 5/min.
+   */
+  RATE_LIMIT_MAX:        parseInt(process.env.RATE_LIMIT_MAX        || '30',  10),
+  RATE_LIMIT_GLOBAL_MAX: parseInt(process.env.RATE_LIMIT_GLOBAL_MAX || '120', 10),
+
+  /**
+   * Tokens de los bots de Telegram, uno por marca.
+   *
+   * `snfplus_usuario` acepta también SNFPLUS_BOT_TOKEN, el nombre anterior al
+   * desdoble en tres perfiles. Sin ese respaldo, el bot dejaría de arrancar en
+   * cualquier entorno donde siga definida la variable antigua.
+   */
   BOT_TOKENS: {
     saludflex:        process.env.SALUDFLEX_BOT_TOKEN,
     veganfood:        process.env.VEGANFOOD_BOT_TOKEN,
     domainhunter:     process.env.DOMAINHUNTER_BOT_TOKEN,
-    snfplus_usuario:  process.env.SNFPLUS_USUARIO_BOT_TOKEN,
+    snfplus_usuario:  process.env.SNFPLUS_USUARIO_BOT_TOKEN || process.env.SNFPLUS_BOT_TOKEN,
     snfplus_rrhh:     process.env.SNFPLUS_RRHH_BOT_TOKEN,
     snfplus_gestor:   process.env.SNFPLUS_GESTOR_BOT_TOKEN,
   },
+
+  /**
+   * Cada marca es un asistente independiente: su propia personalidad y su propia
+   * base de conocimiento en la tabla KnowledgeChunk, filtrada por brandId.
+   * El widget selecciona la marca con el atributo `data-brand-id`.
+   */
   BRANDS: {
     saludflex: {
       name: 'SaludFlex',
