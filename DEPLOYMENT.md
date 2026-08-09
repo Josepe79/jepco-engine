@@ -173,6 +173,39 @@ su propio recuento y el límite efectivo se multiplica por el número de
 instancias. Con una sola instancia no hay problema; para varias hace falta un
 store compartido en Redis.
 
+### Capacidad medida
+
+```bash
+node scratch/load-test.js                          # rampa 1 → 5 → 10 → 20
+node scratch/load-test.js --levels 40,80 --waves 1
+```
+
+Resultados de la primera medición, contra instancia local apuntando a la base
+real, con el rate limit levantado:
+
+| Concurrentes | p50 | p95 | Errores | Saturación |
+|---|---|---|---|---|
+| 1 | 2.353 ms | 2.353 ms | 0 | 0 |
+| 5 | 2.218 ms | 3.035 ms | 0 | 0 |
+| 10 | 2.037 ms | 3.035 ms | 0 | 0 |
+| 20 | 2.389 ms | 2.701 ms | 0 | 0 |
+| 40 | 4.905 ms | 5.313 ms | 0 | 0 |
+| 80 | 7.784 ms | 8.522 ms | 0 | 0 |
+
+**No hay techo duro: hay cola.** Ni un solo error ni respuesta de saturación en
+192 peticiones. Lo que ocurre por encima de 20 concurrentes es que la latencia
+crece de forma casi lineal, porque el rendimiento se estanca en torno a 8-10
+peticiones por segundo — unas 500 por minuto.
+
+Traducido a experiencia: hasta 40 simultáneos se responde en unos 5 segundos, que
+es tolerable. A 80 son 8 segundos, y ahí la gente empieza a cerrar el chat. El
+problema a esa escala no será que falle, será que aburra.
+
+Dos cautelas al leer estos números: la prueba corrió en un portátil, no en el
+contenedor de Railway, que tiene sus propios límites de CPU; y la latencia hasta
+Gemini depende de desde dónde se llame. Las cifras sirven como orden de magnitud,
+no como garantía.
+
 ### Orden de arranque — no reordenar sin leer esto
 
 Fastify solo aplica los hooks `onRequest` a las rutas registradas **después** de
