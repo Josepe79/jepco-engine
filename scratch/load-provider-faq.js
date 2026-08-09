@@ -43,10 +43,41 @@ const CHUNKS = [
     // aunque lo tuviera delante. Un dato que se pregunta solo, se guarda solo.
     provider: 'edenred',
     category: 'transporte',
-    content: 'Tarjeta de transporte de Edenred: atención al cliente y ayuda. Si tienes cualquier problema, incidencia o duda con la tarjeta, puedes llamar por teléfono al 931 110 086 o al 919 100 757. Estos son los números de atención al usuario de Edenred.',
+    // Horario tomado de la página de Ticket Restaurant: son los mismos números
+    // de atención de Edenred, no una línea distinta por producto.
+    content: 'Tarjeta de transporte de Edenred: atención al cliente y ayuda. Si tienes cualquier problema, incidencia o duda con la tarjeta, puedes llamar al 931 110 086 o al 919 100 757, de lunes a jueves de 9 a 18 horas y los viernes de 8 a 15 horas. El centro de ayuda de Edenred está en edenred.es/ayuda.',
+  },
+
+  // ── Edenred · Comida ──────────────────────────────────────────────────────
+  // Fuente: edenred.es/ticket-restaurant/usuarios · redactado de nuevo
+  {
+    provider: 'edenred',
+    category: 'comida',
+    content: 'La tarjeta de comida de Edenred se llama Ticket Restaurant. Dónde se usa: se acepta en más de 50.000 establecimientos de hostelería adheridos en España, es decir restaurantes, bares y cafeterías. También sirve para pedir comida a domicilio en Just Eat, Glovo y Uber Eats. No se puede usar en supermercados ni para hacer la compra.',
+  },
+  {
+    provider: 'edenred',
+    category: 'comida',
+    content: 'Tarjeta de comida de Edenred: cuándo se puede usar, horarios, fines de semana y cenas. Está pensada para la comida dentro de la jornada laboral, en la pausa establecida para comer, y se puede usar en cualquier momento de ese horario. El saldo se calcula por día trabajado. Cada empresa puede fijar restricciones adicionales sobre esa norma general, por ejemplo de horario o de días de la semana, así que si tienes dudas sobre si puedes usarla un día concreto conviene confirmarlo con tu empresa.',
+  },
+  {
+    provider: 'edenred',
+    category: 'comida',
+    content: 'Tarjeta de comida de Edenred: activación y PIN. La primera vez se activa desde la aplicación MyEdenred o desde clientes.edenred.es. Hay que iniciar sesión, introducir el código de activación y el CVC2 que vienen con la tarjeta, y elegir un PIN. También se puede activar por teléfono llamando al 931 110 086 o al 919 100 757.',
+  },
+  {
+    provider: 'edenred',
+    category: 'comida',
+    content: 'Tarjeta de comida de Edenred: aplicación y saldo. La aplicación se llama MyEdenred y está disponible para iOS y Android; también se puede entrar desde clientes.edenred.es. Desde ahí se consultan el saldo y los movimientos. La tarjeta se puede añadir a Google Pay, Apple Pay y Samsung Pay para pagar con el móvil.',
+  },
+  {
+    provider: 'edenred',
+    category: 'comida',
+    content: 'Tarjeta de comida de Edenred: pérdida, robo y atención al cliente. Si pierdes la tarjeta o te la roban, puedes bloquearla tú mismo desde la aplicación MyEdenred o desde tu cuenta en clientes.edenred.es. También puedes llamar al 931 110 086 o al 919 100 757, de lunes a jueves de 9 a 18 horas y los viernes de 8 a 15 horas. El centro de ayuda está en edenred.es/ayuda.',
   },
 
   // ── Pendiente ─────────────────────────────────────────────────────────────
+  // edenred × guarderia
   // pluxee / up_spain / up_one  ×  comida / guarderia / transporte
   // Añadir aquí según se recopilen sus FAQs.
 ];

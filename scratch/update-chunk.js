@@ -14,6 +14,14 @@ const UPDATES = [
     category: 'transporte',
     content: 'Tarjeta Transporte: El límite mensual es de 136,36 €, sin superar los 1.500 € anuales. Al igual que la de comida, requiere solicitar la tarjeta física la primera vez, activarla en el móvil y se recarga el día uno de cada mes. Esta ventaja fiscal no se aplica en los territorios forales del País Vasco, es decir en Álava, Vizcaya y Guipúzcoa.',
   },
+  {
+    // Se quitó "Tarjeta Cheque Gourmet" del texto: es la marca de Pluxee, y este
+    // fragmento lo lee todo el mundo. A un empleado con tarjeta Edenred se le
+    // estaba diciendo que solicitara la de otro proveedor. El nombre comercial
+    // de cada tarjeta va en el fragmento de su emisor.
+    category: 'comida',
+    content: 'Tarjeta Comida: Permite destinar hasta 11 € por día trabajado, con un máximo de 20 días al mes. Si es la primera vez, el empleado debe solicitar la tarjeta física a través de la aplicación, activarla desde el móvil y se recarga el día uno de cada mes. El importe concreto lo decide cada empresa dentro de ese máximo legal.',
+  },
 ];
 
 async function main() {

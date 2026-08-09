@@ -55,13 +55,18 @@ const genAI = new GoogleGenerativeAI(config.GEMINI_API_KEY, { apiVersion: 'v1' }
 /**
  * Cuántos fragmentos se pasan como contexto.
  *
- * Subido de 3 a 5 al introducir los proveedores: una categoría como transporte
- * ya contiene el fragmento genérico más los del emisor, y con tres se quedaba
- * fuera justo el que respondía la pregunta. Con datos de un solo proveedor
- * activo el límite real por consulta ronda los cuatro, así que cinco deja
- * margen sin inflar el prompt.
+ * Era 3, y con los proveedores se quedó corto: una categoría contiene ahora el
+ * fragmento genérico más los del emisor, y quedaba fuera justo el que respondía
+ * la pregunta. Subirlo a 5 tampoco bastó — comida ya tiene 6 — y el síntoma es
+ * traicionero, porque la misma pregunta se responde o se escala según cómo
+ * ordene la similitud ese día.
+ *
+ * A 8 cabe una categoría entera con un proveedor activo y sobra margen. Como el
+ * filtro por marca, categoría y proveedor ya acota mucho, subirlo no infla el
+ * prompt de forma apreciable. Si una categoría llegara a superar los 8
+ * fragmentos, habrá que volver aquí.
  */
-const RETRIEVAL_LIMIT = 5;
+const RETRIEVAL_LIMIT = 8;
 
 /**
  * @param {object} options  Contexto del entorno que incrusta el widget.
@@ -137,7 +142,9 @@ REGLAS DE RESPUESTA — síguelas siempre sin excepción:
 2. Lenguaje simple y directo, como si respondieras por WhatsApp.
 3. Sin asteriscos, sin negritas, sin guiones, sin listas, sin títulos. Solo texto plano.
 4. No repitas la pregunta ni pongas introducciones del tipo "¡Claro!", "Por supuesto", "Es un placer", etc. Ve directo a la respuesta.
-5. Responde ÚNICAMENTE con lo que esté en la INFORMACIÓN RECUPERADA. No uses conocimiento propio sobre seguros, fiscalidad, productos financieros ni legislación. Si la información no está en el contexto, escala.
+5. Responde ÚNICAMENTE con lo que esté en la INFORMACIÓN RECUPERADA. No uses conocimiento propio sobre seguros, fiscalidad, productos financieros ni legislación.
+5b. Si el dato SÍ aparece en la INFORMACIÓN RECUPERADA, dalo sin escalar por prudencia. Esto incluye las respuestas negativas: si el contexto dice que algo no se puede hacer, contéstalo con naturalidad ("No, la tarjeta no sirve para eso") en lugar de decir que no tienes la información.
+5c. Pero nunca deduzcas lo que el contexto no dice. Que no se mencione una limitación NO significa que no exista: si te preguntan dónde se puede usar una tarjeta y el contexto no lo dice, jamás respondas "en cualquier sitio", escala. La ausencia de información no es una respuesta.
 
 SEGURO DE SALUD — distingue siempre entre estas dos cosas:
 6. FISCALIDAD Y FUNCIONAMIENTO (límites de importe, quién puede incluirse, edad de los hijos, discapacidad, duración del contrato, requisitos, cómo se contrata en la aplicación): esto SÍ lo sabes. Respóndelo con la INFORMACIÓN RECUPERADA. No derives al mediador.
@@ -157,7 +164,10 @@ CUANDO NO SEPAS LA RESPUESTA:
     systemInstruction,
     generationConfig: {
       maxOutputTokens: 150,
-      temperature: 0.5,
+      // Bajado de 0.5: esto es soporte factual, no redacción creativa. Con 0.5
+      // la misma pregunta unas veces se respondía y otras se escalaba, teniendo
+      // el dato delante en ambos casos.
+      temperature: 0.2,
     }
   }, { apiVersion: 'v1beta' });
 
