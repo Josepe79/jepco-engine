@@ -230,6 +230,17 @@ const CASES = [
     q: '¿Puedo usarla en el AVE?',
     expect: 'answer', contains: ['ave'] },
 
+  // ── Continuidad de la conversación ──────────────────────────────────────
+  // Preguntas cortas que solo tienen sentido con el tema activo. El widget
+  // arrastra la categoría del último botón pulsado; sin eso, estas se buscaban
+  // contra todo el conocimiento y escalaban.
+  { id: 'seguim-pago-guarderia', brand: 'snfplus_usuario', cat: 'guarderia', prov: 'edenred',
+    q: '¿cómo funciona el pago?',
+    expect: 'answer', contains: ['guarderia'] },
+  { id: 'seguim-donde-transporte', brand: 'snfplus_usuario', cat: 'transporte', prov: 'pluxee',
+    q: '¿dónde se usa?',
+    expect: 'answer', contains: ['metro'] },
+
   // ── RRHH y gestor ───────────────────────────────────────────────────────
   { id: 'rrhh-informes', brand: 'snfplus_rrhh', cat: 'informes',
     q: '¿Cómo genero informes de nómina?',

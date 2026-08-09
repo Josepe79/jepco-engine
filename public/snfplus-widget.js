@@ -585,6 +585,11 @@
     ];
 
     function showMainMenu() {
+        // Volver al menú es cambiar de asunto: se olvida el tema anterior para
+        // que la siguiente pregunta escrita a mano no arrastre una categoría
+        // que ya no viene a cuento.
+        temaActivo = null;
+
         var profileSections = CONFIG.brandId === 'snfplus_rrhh'   ? RRHH_SECTIONS
                             : CONFIG.brandId === 'snfplus_gestor' ? GESTOR_SECTIONS
                             : null;
@@ -716,9 +721,32 @@
 
     // ── Chat ───────────────────────────────────────────────────────────────────
 
+    /**
+     * Tema activo de la conversación.
+     *
+     * Se fija al pulsar un botón de producto o sección y se mantiene en las
+     * preguntas escritas a mano que vienen después. Antes se perdía: quien
+     * pulsaba "Guardería" y luego escribía "¿y cómo se paga?" enviaba esa
+     * segunda pregunta sin categoría, así que se buscaba en todo el conocimiento
+     * en vez de en guardería, y tampoco había forma de saber que hacía falta el
+     * proveedor. Se limpia al volver al menú principal.
+     */
+    var temaActivo = null;
+
     async function sendMessage(category) {
         var text = input.value.trim();
         if (!text) return;
+
+        // Al pulsar un botón se fija el tema; el texto libre hereda el vigente.
+        if (category) temaActivo = category;
+        var categoriaEfectiva = category || temaActivo;
+
+        // Si el tema depende del emisor y aún no lo sabemos, se pregunta antes
+        // de enviar en lugar de responder mal o escalar sin motivo.
+        if (necesitaProveedor(categoriaEfectiva)) {
+            showProviderPicker(categoriaEfectiva, text);
+            return;
+        }
 
         addMessage(text, 'user');
         input.value = '';
@@ -735,7 +763,7 @@
                     message:  text,
                     brandId:  CONFIG.brandId,
                     userId:   CONFIG.userId,
-                    category: category || null,
+                    category: categoriaEfectiva || null,
                     provider: getProveedor(),
                     appUrl:   CONFIG.appUrl  || null,
                     mediador:      CONFIG.mediador      || null,
