@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panel · Jepco Engine</title>
+<style>
+  :root {
+    --ground:#FBFCFD; --surface:#FFF; --alt:#F4F6F9;
+    --ink:#10151C; --soft:#39424E; --muted:#5C6672;
+    --rule:#DFE4EA; --rule-soft:#EDF0F4;
+    --accent:#0047AB; --accent-bg:#E7EFFA;
+    --crit:#B3261E; --crit-bg:#FBEDEC;
+    --warn:#8A5A00; --warn-bg:#FBF3E4;
+    --ok:#1E6B3A;   --ok-bg:#E9F3EC;
+    --sans:system-ui,"Segoe UI Variable Text","Segoe UI",-apple-system,Roboto,sans-serif;
+    --mono:ui-monospace,"Cascadia Mono",Consolas,"SF Mono",Menlo,monospace;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --ground:#0D1117; --surface:#141A22; --alt:#1A212B;
+    --ink:#E4E9EF; --soft:#C2CAD4; --muted:#8A94A0;
+    --rule:#262E39; --rule-soft:#1D242D;
+    --accent:#77A9F2; --accent-bg:#16243A;
+    --crit:#F09189; --crit-bg:#2C1917;
+    --warn:#E0AE5C; --warn-bg:#2A2013;
+    --ok:#7FC698;   --ok-bg:#142219;
+  }}
+  *{box-sizing:border-box}
+  body{background:var(--ground);color:var(--ink);font-family:var(--sans);
+       margin:0;font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 20px 80px}
+
+  header{padding:28px 0 20px;border-bottom:2px solid var(--ink);
+         display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;justify-content:space-between}
+  h1{font-size:1.4rem;margin:0;letter-spacing:-.02em;font-weight:650}
+  .who{font-family:var(--mono);font-size:.7rem;color:var(--muted);margin:4px 0 0}
+  .controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  select{font-family:var(--sans);font-size:.85rem;padding:6px 10px;
+         background:var(--surface);color:var(--ink);
+         border:1px solid var(--rule);border-radius:3px}
+  button.refresh{font-family:var(--sans);font-size:.85rem;padding:6px 14px;cursor:pointer;
+         background:var(--accent);color:#fff;border:0;border-radius:3px}
+
+  .tally{display:flex;flex-wrap:wrap;border-bottom:1px solid var(--rule)}
+  .tally div{flex:1 1 120px;padding:18px 18px 18px 0;display:flex;flex-direction:column;gap:2px}
+  .tally b{font-family:var(--mono);font-variant-numeric:tabular-nums;
+           font-size:1.7rem;font-weight:600;line-height:1;letter-spacing:-.02em}
+  .tally span{font-size:.75rem;color:var(--muted)}
+  .n-crit b{color:var(--crit)} .n-warn b{color:var(--warn)} .n-acc b{color:var(--accent)}
+
+  section{padding-top:36px}
+  h2{font-family:var(--mono);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;
+     color:var(--muted);font-weight:600;margin:0 0 3px;display:flex;gap:10px;align-items:baseline}
+  h2 .n{color:var(--accent)}
+  .hint{font-size:.85rem;color:var(--soft);margin:0 0 12px;max-width:66ch}
+
+  table{width:100%;border-collapse:collapse;font-size:.875rem}
+  .scroll{overflow-x:auto}
+  th{text-align:left;font-family:var(--mono);font-size:.66rem;letter-spacing:.07em;
+     text-transform:uppercase;color:var(--muted);font-weight:600;
+     padding:8px 12px 8px 0;border-bottom:1px solid var(--rule);white-space:nowrap}
+  td{padding:10px 12px 10px 0;border-bottom:1px solid var(--rule-soft);
+     vertical-align:top;color:var(--soft)}
+  td.q{color:var(--ink)}
+  tr:hover td{background:var(--alt)}
+  .num{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .tag{font-family:var(--mono);font-size:.66rem;padding:2px 6px;border-radius:2px;
+       background:var(--accent-bg);color:var(--accent);white-space:nowrap}
+  .tag.free{background:var(--warn-bg);color:var(--warn)}
+  .sim-lo{color:var(--crit);font-weight:600}
+  .sim-hi{color:var(--ok)}
+  .ans{font-size:.83rem;color:var(--muted);margin-top:4px;
+       padding-left:10px;border-left:2px solid var(--rule)}
+  .empty{font-size:.85rem;color:var(--muted);padding:14px 0;font-style:italic}
+  .bar{display:inline-block;height:8px;background:var(--accent);border-radius:1px;
+       vertical-align:middle;margin-right:8px;min-width:2px}
+  .loading{padding:60px 0;text-align:center;color:var(--muted);font-family:var(--mono);font-size:.8rem}
+  .err{background:var(--crit-bg);color:var(--crit);padding:14px;border-radius:3px;
+       font-size:.87rem;margin-top:20px}
+  .note{background:var(--warn-bg);color:var(--warn);padding:12px 14px;border-radius:3px;
+        font-size:.83rem;margin-top:10px}
+  footer{margin-top:48px;padding-top:18px;border-top:1px solid var(--rule);
+         font-size:.78rem;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <h1>Panel de análisis</h1>
+      <p class="who" id="who"></p>
+    </div>
+    <div class="controls">
+      <select id="brand">
+        <option value="">Todas las marcas</option>
+        <option value="snfplus_usuario">snfplus_usuario</option>
+        <option value="snfplus_rrhh">snfplus_rrhh</option>
+        <option value="snfplus_gestor">snfplus_gestor</option>
+      </select>
+      <select id="days">
+        <option value="1">24 horas</option>
+        <option value="7" selected>7 días</option>
+        <option value="30">30 días</option>
+        <option value="90">90 días</option>
+      </select>
+      <button class="refresh" id="refresh">Actualizar</button>
+    </div>
+  </header>
+
+  <div id="out"><div class="loading">Cargando…</div></div>
+
+  <footer>
+    Los datos se purgan a los 90 días. Consolida lo aprendido en fragmentos de
+    conocimiento antes de que caduquen.
+  </footer>
+</div>
+
+<script nonce="__CSP_NONCE__">
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+const when = d => new Date(d).toLocaleString('es-ES', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+const cat = c => c ? `<span class="tag">${esc(c)}</span>` : '<span class="tag free">texto libre</span>';
+const sim = v => v == null ? '<span class="num">—</span>'
+  : `<span class="num ${v < 0.6 ? 'sim-lo' : v >= 0.7 ? 'sim-hi' : ''}">${v.toFixed(2)}</span>`;
+
+function table(head, rows) {
+  if (!rows.length) return '<p class="empty">Nada que revisar en este periodo.</p>';
+  return `<div class="scroll"><table><thead><tr>${
+    head.map(h => `<th>${h}</th>`).join('')
+  }</tr></thead><tbody>${rows.join('')}</tbody></table></div>`;
+}
+
+function section(title, count, hint, body) {
+  return `<section><h2>${title}<span class="n">${count}</span></h2>
+          <p class="hint">${hint}</p>${body}</section>`;
+}
+
+function render(d) {
+  const s = d.summary;
+  const p = (a) => s.total ? Math.round(a / s.total * 100) : 0;
+
+  let h = `<div class="tally">
+    <div><b>${s.total}</b><span>Intercambios</span></div>
+    <div class="n-crit"><b>${s.escalated}</b><span>Escalados · ${p(s.escalated)}%</span></div>
+    <div class="n-crit"><b>${s.noContext}</b><span>Sin contexto · ${p(s.noContext)}%</span></div>
+    <div class="n-warn"><b>${s.fallback}</b><span>Categoría vacía · ${p(s.fallback)}%</span></div>
+    <div class="n-acc"><b>${s.freeText}</b><span>Texto libre · ${p(s.freeText)}%</span></div>
+  </div>`;
+
+  if (!s.total) {
+    h += `<div class="note">Todavía no hay interacciones registradas en este periodo.
+          El panel se llenará según se vaya usando el asistente.</div>`;
+    $('out').innerHTML = h;
+    return;
+  }
+
+  h += section('Escalados', d.escalations.length,
+    'La IA no pudo responder. Cada uno es un hueco confirmado en el conocimiento — máxima prioridad.',
+    table(['Cuándo','Marca','Categoría','Similitud','Pregunta'], d.escalations.map(r => `<tr>
+      <td class="num">${when(r.createdAt)}</td><td class="num">${esc(r.brandId)}</td>
+      <td>${cat(r.category)}</td><td>${sim(r.topSimilarity)}</td>
+      <td class="q">${esc(r.question)}</td></tr>`)));
+
+  h += section('Revisión de fidelidad', d.fidelityReview.length,
+    `Recuperación buena (≥ ${d.meta.thresholds.STRONG_MATCH}) que no escaló. Las métricas salen sanas,
+     así que si hay error solo se ve leyendo. Aquí es donde la IA puede haber respondido
+     de su propio conocimiento en vez del manual.`,
+    table(['Cuándo','Sim.','Categoría','Pregunta y respuesta'], d.fidelityReview.map(r => `<tr>
+      <td class="num">${when(r.createdAt)}</td><td>${sim(r.topSimilarity)}</td>
+      <td>${cat(r.category)}</td>
+      <td class="q">${esc(r.question)}<div class="ans">${esc(r.answer)}</div></td></tr>`)));
+
+  h += section('Hueco total', d.gaps.length,
+    'La búsqueda no encontró absolutamente nada parecido. Falta escribir el fragmento.',
+    table(['Cuándo','Marca','Categoría','Pregunta'], d.gaps.map(r => `<tr>
+      <td class="num">${when(r.createdAt)}</td><td class="num">${esc(r.brandId)}</td>
+      <td>${cat(r.category)}</td><td class="q">${esc(r.question)}</td></tr>`)));
+
+  h += section('Match débil', d.weakMatches.length,
+    `Similitud por debajo de ${d.meta.thresholds.WEAK_MATCH}: el contenido existe pero no encaja con
+     cómo lo formula la gente. Se arregla reescribiendo el fragmento con su vocabulario.`,
+    table(['Sim.','Cuándo','Categoría','Pregunta'], d.weakMatches.map(r => `<tr>
+      <td>${sim(r.topSimilarity)}</td><td class="num">${when(r.createdAt)}</td>
+      <td>${cat(r.category)}</td><td class="q">${esc(r.question)}</td></tr>`)));
+
+  h += section('Reformulaciones', d.rephrases.length,
+    `Volvió a preguntar en menos de ${d.meta.thresholds.REPHRASE_WINDOW_S} segundos. Señal de que la
+     respuesta anterior no le sirvió, aunque técnicamente no fallara nada.`,
+    table(['Margen','Primera pregunta','Reformulación'], d.rephrases.map(r => `<tr>
+      <td class="num">${r.gapSeconds}s</td><td>${esc(r.first)}</td>
+      <td class="q">${esc(r.then)}</td></tr>`)));
+
+  h += section('Categorías vacías', d.emptyCategories.length,
+    'El botón envía esta categoría pero no hay contenido propio en ella, así que hubo que buscar en el fondo general. O falta contenido, o el botón apunta donde no debe.',
+    table(['Veces','Categoría'], d.emptyCategories.map(r => `<tr>
+      <td class="num">${r.count}</td><td>${cat(r.category)}</td></tr>`)));
+
+  const maxUse = Math.max(...d.categoryUsage.map(c => c.count), 1);
+  h += section('Uso por categoría', d.categoryUsage.length,
+    'Qué se pregunta de verdad. Las que no aparecen son botones que nadie pulsa.',
+    table(['Veces','Categoría',''], d.categoryUsage.map(r => `<tr>
+      <td class="num">${r.count}</td><td>${cat(r.category)}</td>
+      <td style="width:55%"><span class="bar" style="width:${r.count/maxUse*100}%"></span></td></tr>`)));
+
+  h += section('Texto libre', d.freeText.length,
+    'Escribió a mano en vez de usar el menú. Revela qué casos no cubren los botones.',
+    table(['Cuándo','Marca','Escaló','Pregunta'], d.freeText.map(r => `<tr>
+      <td class="num">${when(r.createdAt)}</td><td class="num">${esc(r.brandId)}</td>
+      <td>${r.escalated ? 'sí' : '—'}</td><td class="q">${esc(r.question)}</td></tr>`)));
+
+  const c = d.chunks;
+  h += section('Fragmentos sin usar', c.dead.length,
+    `${c.usedChunks} de ${c.totalChunks} fragmentos se han recuperado en este periodo.
+     Cuidado al interpretarlo: con poco tráfico casi todo parece muerto. Solo es
+     fiable con volumen suficiente.`,
+    table(['Marca','Categoría','Contenido'], c.dead.map(r => `<tr>
+      <td class="num">${esc(r.brandId)}</td><td>${cat(r.category)}</td>
+      <td>${esc(r.preview)}…</td></tr>`)));
+
+  $('out').innerHTML = h;
+}
+
+async function load() {
+  $('out').innerHTML = '<div class="loading">Cargando…</div>';
+  const qs = new URLSearchParams({ brand: $('brand').value, days: $('days').value });
+  try {
+    const res = await fetch('/api/admin/overview?' + qs, { credentials: 'same-origin' });
+    if (!res.ok) throw new Error(`El servidor respondió ${res.status}`);
+    const data = await res.json();
+    $('who').textContent = `sesión: ${data.viewer} · generado ${when(data.meta.generatedAt)}`;
+    render(data);
+  } catch (e) {
+    $('out').innerHTML = `<div class="err">No se pudieron cargar los datos: ${esc(e.message)}</div>`;
+  }
+}
+
+$('refresh').addEventListener('click', load);
+$('brand').addEventListener('change', load);
+$('days').addEventListener('change', load);
+load();
+</script>
+</body>
+</html>

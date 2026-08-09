@@ -56,6 +56,7 @@ snfplus-widget.js  ──▶  Fastify (src/index.js)
 | `CORS_ORIGINS` | `*` | Dominios autorizados a llamar a `/api/*`. **Hay que fijarlo en producción.** Ver §4. |
 | `RATE_LIMIT_MAX` | `30` | Peticiones/minuto por IP en `/api/chat`. |
 | `RATE_LIMIT_GLOBAL_MAX` | `120` | Peticiones/minuto por IP en el resto de rutas. |
+| `ADMIN_USERS` | vacío | Cuentas del panel `/admin`. Sin ella, el panel queda deshabilitado. Ver §8. |
 
 ### Telegram — avisos de escalado
 
@@ -275,13 +276,44 @@ diálogo para dárselo a la IA; esto guarda el diagnóstico.
 **El registro nunca puede tumbar una conversación.** `recordInteraction()` traga
 sus propios errores: si falla, se pierde esa fila y el usuario no se entera.
 
-### Detectar patrones
+### El panel: `/admin`
+
+Interfaz web con todos los patrones, filtrable por marca y periodo.
+
+**Acceso.** Autenticación básica HTTP con cuentas nominales. Se crean así:
+
+```bash
+node scratch/admin-user.js josep
+```
+
+Imprime una contraseña aleatoria (que solo se muestra una vez) y la cadena
+`usuario:salt:hash` para pegar en `ADMIN_USERS`. Varias cuentas se separan por
+coma. Sin `ADMIN_USERS` definida, el panel responde 503.
+
+**Por qué nominal y no una llave compartida:** detrás del panel hay
+conversaciones de empleados. Con un secreto único es imposible responder a
+"quién accedió a este registro". Con cuentas por persona, cada acceso queda
+atribuido en los logs — y el detalle de una conversación individual se registra
+con nivel `warn`, separado de las consultas agregadas.
+
+Las contraseñas se guardan con scrypt y salt por usuario; la comparación es en
+tiempo constante y no revela si el usuario existe.
+
+**Nota de implementación:** el script del panel va en línea y helmet aplica
+`script-src 'self'`, que lo bloquearía. Se autoriza con un nonce distinto en
+cada petición, en lugar de abrir la política con `'unsafe-inline'` — que valdría
+para cualquier inyección, no solo para el script legítimo.
+
+### Por línea de comandos
 
 ```bash
 node scratch/patterns.js                  # 7 días, todas las marcas
 node scratch/patterns.js snfplus_rrhh     # una marca
 node scratch/patterns.js snfplus_rrhh 30  # una marca, 30 días
 ```
+
+El panel y el CLI comparten `src/services/analytics.service.js`, así que nunca
+pueden decir cosas distintas.
 
 Cada patrón apunta a un fallo distinto, y cada uno se corrige de forma distinta:
 
@@ -349,6 +381,14 @@ de privacidad y en su registro de actividades de tratamiento.
 | `POST` | `/api/knowledge/upload` | Subida de fichero por formulario. |
 | `POST` | `/upload` | Subida por CLI, admite `category`. |
 | `GET` | `/debug/chat-test` | Diagnóstico de la cadena RAG + Gemini. |
+
+### Protegidos con autenticación básica (`ADMIN_USERS`)
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| `GET` | `/admin` | Panel de análisis. |
+| `GET` | `/api/admin/overview` | Todos los patrones. Parámetros: `brand`, `days`. |
+| `GET` | `/api/admin/conversation/:id` | Conversación completa. Acceso registrado con `warn`. |
 
 El secreto se compara en tiempo constante (`crypto.timingSafeEqual`) para no
 filtrar información por diferencias de tiempo de respuesta.

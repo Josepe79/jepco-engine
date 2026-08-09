@@ -37,6 +37,7 @@ const rateLimit     = require('@fastify/rate-limit');
 const multipart     = require('@fastify/multipart');
 const fastifyStatic = require('@fastify/static');
 const ingestionService = require('./services/ingestion.service');
+const { registerAdminRoutes } = require('./admin.routes');
 
 // ── Validación de inputs ───────────────────────────────────────────────────────
 
@@ -205,6 +206,9 @@ function registerRoutes() {
   fastify.get('/health', async () => {
     return { status: 'ok', timestamp: new Date() };
   });
+
+  // Panel de administración: /admin y /api/admin/*
+  registerAdminRoutes(fastify);
 
   /**
    * Web Chat — endpoint público del widget.

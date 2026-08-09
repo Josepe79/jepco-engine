@@ -17,8 +17,20 @@ module.exports = {
   ADMIN_TELEGRAM_CHAT_ID: process.env.ADMIN_TELEGRAM_CHAT_ID,
   ADMIN_BOT_TOKEN:        process.env.ADMIN_BOT_TOKEN,
 
-  // Secreto compartido para los endpoints de administración e ingesta
+  // Secreto compartido para los endpoints de ingesta (CLI/API)
   UPLOAD_SECRET: process.env.UPLOAD_SECRET,
+
+  /**
+   * Cuentas del panel de administración, separadas por coma:
+   *   usuario:salt:hash,otro:salt:hash
+   *
+   * Se generan con `node scratch/admin-user.js <usuario>`.
+   * Sin esta variable el panel queda deshabilitado (responde 503).
+   *
+   * Son cuentas nominales a propósito: detrás del panel hay conversaciones de
+   * empleados, y con una llave compartida sería imposible saber quién accedió.
+   */
+  ADMIN_USERS: process.env.ADMIN_USERS || '',
 
   /**
    * Orígenes autorizados a llamar a /api/*, separados por coma.
