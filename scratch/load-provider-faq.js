@@ -167,9 +167,26 @@ const CHUNKS = [
     content: 'Ticket Transporte de Pluxee: atención al cliente. Si tienes cualquier problema, incidencia o duda con la tarjeta de transporte, el teléfono de atención de Pluxee es el 900 800 777. Ese mismo número sirve para activar la tarjeta y para consultar el saldo.',
   },
 
+  // ── Up Spain · Comida ─────────────────────────────────────────────────────
+  // Fuente: up-spain.com/cheque-gourmet · redactado de nuevo
+  {
+    provider: 'up_spain',
+    category: 'comida',
+    content: 'La tarjeta de comida de Up Spain se llama Cheque Gourmet. Puede ser una tarjeta contactless física o virtual, para llevarla en el móvil. Dónde se usa: en más de 45.000 establecimientos asociados en España, entre restaurantes, bares, take away, vending y plataformas de comida a domicilio. En la práctica sirve en cualquier establecimiento de restauración que acepte Mastercard.',
+  },
+  {
+    provider: 'up_spain',
+    category: 'comida',
+    content: 'Cheque Gourmet de Up Spain: aplicación y saldo. La gestión se hace desde UpONE, que es la plataforma digital de Up Spain. Su aplicación está disponible en App Store y en Google Play, y desde ella se consultan el saldo y los movimientos de la tarjeta.',
+  },
+
   // ── Pendiente ─────────────────────────────────────────────────────────────
-  // up_spain / up_one  ×  comida / guarderia / transporte
-  // Añadir aquí según se recopilen sus FAQs.
+  // up_spain × guarderia (Up Educainfantil) / transporte (Up Transporte)
+  // up_one — ver nota abajo
+  //
+  // Nota: UpONE es la plataforma digital de Up Spain, no un emisor distinto.
+  // Antes de cargar nada bajo `up_one` conviene confirmar si SNF+ lo distingue
+  // de verdad o si es el mismo proveedor con otro nombre.
 ];
 
 async function main() {

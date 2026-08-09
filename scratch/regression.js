@@ -117,10 +117,25 @@ const CASES = [
   { id: 'com-limite-generico', brand: 'snfplus_usuario', cat: 'comida', prov: 'edenred',
     q: '¿Cuánto puedo gastar al día?',
     expect: 'answer', contains: ['11'] },
-  // La marca de Pluxee no debe aparecer en contenido genérico
+  // Cheque Gourmet es de Up Spain: no debe colarse a usuarios de otro emisor
   { id: 'com-sin-marca-ajena', brand: 'snfplus_usuario', cat: 'comida', prov: 'edenred',
     q: '¿Qué necesito para empezar a usar la tarjeta de comida?',
     expect: 'answer', absent: ['cheque gourmet'] },
+  { id: 'com-upspain-nombre', brand: 'snfplus_usuario', cat: 'comida', prov: 'up_spain',
+    q: '¿Cómo se llama mi tarjeta de comida?',
+    expect: 'answer', contains: ['cheque gourmet'],
+    absent: ['ticket restaurant', 'pluxee'] },
+  { id: 'com-upspain-donde', brand: 'snfplus_usuario', cat: 'comida', prov: 'up_spain',
+    q: '¿En qué sitios puedo usar la tarjeta de comida?',
+    expect: 'answer', contains: ['45.000'] },
+  { id: 'com-upspain-app', brand: 'snfplus_usuario', cat: 'comida', prov: 'up_spain',
+    q: '¿Dónde consulto el saldo?',
+    expect: 'answer', contains: ['upone'] },
+  // La exclusión de supermercados es normativa: debe saberla cualquier emisor,
+  // incluido Up Spain, cuya web no la menciona.
+  { id: 'com-supermercado-upspain', brand: 'snfplus_usuario', cat: 'comida', prov: 'up_spain',
+    q: '¿Puedo usarla para hacer la compra en el supermercado?',
+    expect: 'answer', contains: ['no'] },
 
   // ── Guardería ───────────────────────────────────────────────────────────
   { id: 'gua-sin-tarjeta', brand: 'snfplus_usuario', cat: 'guarderia', prov: 'edenred',

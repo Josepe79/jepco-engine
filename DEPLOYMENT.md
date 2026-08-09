@@ -288,21 +288,35 @@ node scratch/load-provider-faq.js edenred    # solo uno
 |---|---|---|---|
 | Edenred | 5 | 4 | 4 |
 | Pluxee | 4 | 3 | 4 |
-| Up Spain | — | — | — |
-| Up One | — | — | — |
+| Up Spain | 2 | — | — |
+| Up One | ver nota | | |
+
+**Sobre `up_one`:** UpONE es la plataforma digital de Up Spain, no un emisor
+distinto — así lo presenta su propia web. Antes de cargar nada bajo ese id
+conviene confirmar si SNF+ lo distingue de verdad o si es el mismo proveedor con
+otro nombre. Si son el mismo, sobra de `ALLOWED_PROVIDERS` y del widget.
+
+Nombres comerciales de Up Spain, para cuando toque cargar el resto:
+Cheque Gourmet (comida), Up Educainfantil (guardería), Up Transporte.
 
 Al recopilar las FAQs de un emisor conviene revisar primero qué **no** cubre su
 web, y sobre todo distinguir qué es suyo y qué es normativa.
 
-Ejemplo real: la web de Pluxee dice que la guardería cubre el primer ciclo de
-Educación Infantil, de 0 a 3 años. Eso no es un dato de Pluxee sino la
-definición legal que da derecho a la exención, así que va al fragmento genérico
-— y desde ahí lo responde también a los usuarios de Edenred, cuya web no lo
-menciona. Meterlo en el fragmento del emisor habría dejado el hueco abierto para
-todos los demás.
+Ha pasado dos veces ya:
 
-Huecos conocidos que ninguna de las dos webs cubre: qué ocurre en los meses sin
-escolarización (guardería) y la caducidad del saldo no consumido (comida).
+- La web de Pluxee dice que la guardería cubre el primer ciclo de Educación
+  Infantil, de 0 a 3 años. No es un dato de Pluxee sino la definición legal que
+  da derecho a la exención.
+- La de Pluxee también explica que la tarjeta de comida no vale en supermercados
+  porque la exención del IRPF solo ampara establecimientos de restauración. Otra
+  vez normativa, no política suya.
+
+Los dos fueron al fragmento genérico, y desde ahí los responde cualquier emisor
+—incluidos Edenred y Up Spain, cuyas webs no los mencionan—. Archivados bajo
+Pluxee habrían dejado el hueco abierto para todos los demás.
+
+Huecos que ninguna web cubre todavía: qué ocurre en los meses sin escolarización
+(guardería) y la caducidad del saldo no consumido (comida).
 
 Al actualizar un fragmento genérico con `update-chunk.js`, el borrado filtra por
 `provider IS NULL`. Sin ese filtro, tocar el texto genérico de transporte se
@@ -394,7 +408,7 @@ NODE_ENV=development PORT=3999 RATE_LIMIT_MAX=300 node src/index.js
 node scratch/regression.js
 ```
 
-Comprueba 39 casos: que responda lo que sabe, que escale lo que no, que cada
+Comprueba 43 casos: que responda lo que sabe, que escale lo que no, que cada
 emisor dé sus propios datos y que no aparezcan invenciones concretas
 (`absent: ['cualquier sitio']`, `absent: ['cheque gourmet']`, `absent:
 ['931 110 086']` en respuestas de Pluxee).
@@ -408,7 +422,7 @@ casos y aflojaba otros, y sin medir el conjunto era imposible saber si un cambio
 mejoraba o empeoraba. Con la suite, una idea que suena razonable se descarta en
 cinco minutos si no mueve el número.
 
-Marca actual: **36/39**. Los tres fallos restantes son respuestas poco útiles, no
+Marca actual: **40/43**. Los tres fallos restantes son respuestas poco útiles, no
 invenciones: cuando un emisor no tiene contenido operativo cargado, el modelo
 rellena con la parte fiscal en vez de reconocer que no lo sabe ("la tarjeta de
 transporte sirve para transporte"). Nada de lo que dice es falso, pero tampoco

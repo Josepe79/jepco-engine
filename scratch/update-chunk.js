@@ -23,12 +23,19 @@ const UPDATES = [
     content: 'Guardería: La ventaja fiscal cubre el primer ciclo de Educación Infantil, es decir niños de 0 a 3 años. Exige tener al hijo o hija dado de alta en el sistema previamente, y el centro debe estar adherido al proveedor. Para tramitarlo se debe obtener e introducir el código digital específico de la guardería a través del enlace habilitado en el simulador.',
   },
   {
-    // Se quitó "Tarjeta Cheque Gourmet" del texto: es la marca de Pluxee, y este
-    // fragmento lo lee todo el mundo. A un empleado con tarjeta Edenred se le
-    // estaba diciendo que solicitara la de otro proveedor. El nombre comercial
-    // de cada tarjeta va en el fragmento de su emisor.
+    // Dos correcciones sobre el texto original:
+    //
+    // 1. Se quitó "Tarjeta Cheque Gourmet". Es la marca de Up Spain, y este
+    //    fragmento lo lee todo el mundo, así que a un empleado con tarjeta
+    //    Edenred se le estaba diciendo que solicitara la de otro proveedor. El
+    //    nombre comercial de cada tarjeta va en el fragmento de su emisor.
+    //
+    // 2. Se añadió la exclusión de supermercados. No es política de ningún
+    //    emisor: la exención del IRPF solo ampara establecimientos de
+    //    restauración. Al ser normativa va aquí, y así la responde también a
+    //    usuarios de emisores cuya web no la menciona.
     category: 'comida',
-    content: 'Tarjeta Comida: Permite destinar hasta 11 € por día trabajado, con un máximo de 20 días al mes. Si es la primera vez, el empleado debe solicitar la tarjeta física a través de la aplicación, activarla desde el móvil y se recarga el día uno de cada mes. El importe concreto lo decide cada empresa dentro de ese máximo legal.',
+    content: 'Tarjeta Comida: Permite destinar hasta 11 € por día trabajado, con un máximo de 20 días al mes. Solo se puede usar en establecimientos de restauración, porque la exención del IRPF no ampara la compra en supermercados ni alimentación para llevar a casa. Si es la primera vez, el empleado debe solicitar la tarjeta física a través de la aplicación, activarla desde el móvil y se recarga el día uno de cada mes. El importe concreto lo decide cada empresa dentro de ese máximo legal.',
   },
 ];
 
