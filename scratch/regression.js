@@ -81,9 +81,10 @@ const CASES = [
   { id: 'trans-sin-proveedor', brand: 'snfplus_usuario', cat: 'transporte',
     q: '¿Dónde puedo usar la tarjeta de transporte?',
     expect: 'escalate', absent: ['cualquier lugar', 'cualquier sitio', 'metro'] },
-  { id: 'trans-pluxee-sin-faq', brand: 'snfplus_usuario', cat: 'transporte', prov: 'pluxee',
+  // Control anti-invención: up_one no tiene FAQs cargadas todavía
+  { id: 'trans-sin-faq-emisor', brand: 'snfplus_usuario', cat: 'transporte', prov: 'up_one',
     q: '¿Dónde puedo usar la tarjeta de transporte?',
-    expect: 'escalate', absent: ['cualquier lugar', 'cualquier sitio', 'metro'] },
+    expect: 'escalate', absent: ['cualquier lugar', 'cualquier sitio', 'metro', 'renfe'] },
 
   // ── Comida por emisor ───────────────────────────────────────────────────
   { id: 'com-edenred-nombre', brand: 'snfplus_usuario', cat: 'comida', prov: 'edenred',
@@ -131,13 +132,38 @@ const CASES = [
   { id: 'gua-cambio', brand: 'snfplus_usuario', cat: 'guarderia', prov: 'edenred',
     q: 'Voy a cambiar a mi hija de guardería, ¿qué hago?',
     expect: 'answer', contains: ['avisar'] },
-  // Huecos conocidos: su web no lo dice, no debe inventarlo
-  { id: 'gua-hueco-edad', brand: 'snfplus_usuario', cat: 'guarderia', prov: 'edenred',
+  // La edad la aporta ahora el fragmento genérico, así que la sabe cualquier
+  // emisor aunque su propia web no la mencione.
+  { id: 'gua-edad-edenred', brand: 'snfplus_usuario', cat: 'guarderia', prov: 'edenred',
     q: '¿Hasta qué edad puedo usar el servicio de guardería?',
-    expect: 'escalate', absent: ['3 años', 'tres años'] },
+    expect: 'answer', contains: ['3'] },
+  { id: 'gua-edad-pluxee', brand: 'snfplus_usuario', cat: 'guarderia', prov: 'pluxee',
+    q: '¿Hasta qué edad puedo usar el servicio de guardería?',
+    expect: 'answer', contains: ['3'] },
+  // Hueco real: ninguna de las dos webs lo dice, no debe inventarlo
   { id: 'gua-hueco-verano', brand: 'snfplus_usuario', cat: 'guarderia', prov: 'edenred',
     q: '¿Qué pasa en julio y agosto si no hay guardería?',
     expect: 'escalate' },
+
+  // ── Pluxee: guardería y transporte ──────────────────────────────────────
+  { id: 'gua-pluxee-nombre', brand: 'snfplus_usuario', cat: 'guarderia', prov: 'pluxee',
+    q: '¿Cómo funciona el pago de la guardería?',
+    expect: 'answer', contains: ['cheque'] },
+  { id: 'gua-pluxee-no-adherida', brand: 'snfplus_usuario', cat: 'guarderia', prov: 'pluxee',
+    q: 'Mi guardería no está adherida, ¿qué puedo hacer?',
+    expect: 'answer', contains: ['pluxee'] },
+  { id: 'trans-pluxee-donde', brand: 'snfplus_usuario', cat: 'transporte', prov: 'pluxee',
+    q: '¿Dónde puedo usar la tarjeta de transporte?',
+    expect: 'answer', contains: ['metro'], absent: ['931 110 086'] },
+  { id: 'trans-pluxee-renfe', brand: 'snfplus_usuario', cat: 'transporte', prov: 'pluxee',
+    q: '¿Puedo comprar billetes de Renfe?',
+    expect: 'answer', contains: ['renfe'] },
+  { id: 'trans-pluxee-tel', brand: 'snfplus_usuario', cat: 'transporte', prov: 'pluxee',
+    q: '¿A qué teléfono llamo si tengo un problema con la tarjeta?',
+    expect: 'answer', contains: ['900 800 777'], absent: ['931 110 086'] },
+  { id: 'trans-pluxee-caducidad', brand: 'snfplus_usuario', cat: 'transporte', prov: 'pluxee',
+    q: '¿Caduca la tarjeta de transporte?',
+    expect: 'answer', contains: ['48'] },
 
   // ── RRHH y gestor ───────────────────────────────────────────────────────
   { id: 'rrhh-informes', brand: 'snfplus_rrhh', cat: 'informes',

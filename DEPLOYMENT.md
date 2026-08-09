@@ -287,15 +287,22 @@ node scratch/load-provider-faq.js edenred    # solo uno
 | | Comida | Guardería | Transporte |
 |---|---|---|---|
 | Edenred | 5 | 4 | 4 |
-| Pluxee | 4 | — | — |
+| Pluxee | 4 | 3 | 4 |
 | Up Spain | — | — | — |
 | Up One | — | — | — |
 
 Al recopilar las FAQs de un emisor conviene revisar primero qué **no** cubre su
-web. En Edenred faltan la edad máxima de los hijos y qué ocurre en los meses sin
-escolarización (guardería), y la caducidad del saldo (comida). Son preguntas
-frecuentes, así que seguirán apareciendo como huecos en el panel hasta que se
-consigan de su centro de ayuda o preguntándoles directamente.
+web, y sobre todo distinguir qué es suyo y qué es normativa.
+
+Ejemplo real: la web de Pluxee dice que la guardería cubre el primer ciclo de
+Educación Infantil, de 0 a 3 años. Eso no es un dato de Pluxee sino la
+definición legal que da derecho a la exención, así que va al fragmento genérico
+— y desde ahí lo responde también a los usuarios de Edenred, cuya web no lo
+menciona. Meterlo en el fragmento del emisor habría dejado el hueco abierto para
+todos los demás.
+
+Huecos conocidos que ninguna de las dos webs cubre: qué ocurre en los meses sin
+escolarización (guardería) y la caducidad del saldo no consumido (comida).
 
 Al actualizar un fragmento genérico con `update-chunk.js`, el borrado filtra por
 `provider IS NULL`. Sin ese filtro, tocar el texto genérico de transporte se
@@ -387,20 +394,26 @@ NODE_ENV=development PORT=3999 RATE_LIMIT_MAX=300 node src/index.js
 node scratch/regression.js
 ```
 
-Comprueba 32 casos: que responda lo que sabe, que escale lo que no, que cada
+Comprueba 39 casos: que responda lo que sabe, que escale lo que no, que cada
 emisor dé sus propios datos y que no aparezcan invenciones concretas
-(`absent: ['cualquier sitio']`, `absent: ['cheque gourmet']`).
+(`absent: ['cualquier sitio']`, `absent: ['cheque gourmet']`, `absent:
+['931 110 086']` en respuestas de Pluxee).
+
+Cada emisor nuevo debería traer sus casos: basta con el nombre comercial de la
+tarjeta, su teléfono con `absent` del teléfono del otro emisor, y un control
+anti-invención sobre algo que su web no diga.
 
 **Existe porque afinar el prompt a ojo no funciona.** Cada retoque arreglaba unos
 casos y aflojaba otros, y sin medir el conjunto era imposible saber si un cambio
 mejoraba o empeoraba. Con la suite, una idea que suena razonable se descarta en
 cinco minutos si no mueve el número.
 
-Marca actual: **28/32**. Los cuatro fallos restantes son respuestas poco útiles,
-no invenciones: cuando un emisor no tiene contenido operativo cargado, el modelo
+Marca actual: **36/39**. Los tres fallos restantes son respuestas poco útiles, no
+invenciones: cuando un emisor no tiene contenido operativo cargado, el modelo
 rellena con la parte fiscal en vez de reconocer que no lo sabe ("la tarjeta de
 transporte sirve para transporte"). Nada de lo que dice es falso, pero tampoco
-responde. Desaparecerán solos según se carguen las FAQs que faltan.
+responde. Desaparecen solos según se cargan las FAQs que faltan — al completar
+Pluxee, dos de los cuatro anteriores se resolvieron sin tocar código.
 
 ### Cómo se detecta un escalado
 

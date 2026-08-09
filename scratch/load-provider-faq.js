@@ -126,8 +126,48 @@ const CHUNKS = [
     content: 'Tarjeta Restaurante Pluxee: atención al cliente y ayuda. Si tienes cualquier problema, incidencia o duda con la tarjeta, puedes llamar al teléfono de atención de Pluxee, el 900 800 777. Es el mismo número para consultar el PIN.',
   },
 
+  // ── Pluxee · Guardería ────────────────────────────────────────────────────
+  // Fuente: pluxee.es/cheque-guarderia · redactado de nuevo
+  {
+    provider: 'pluxee',
+    category: 'guarderia',
+    content: 'El producto de guardería de Pluxee se llama Cheque guardería Pluxee. Cómo funciona el pago: se emiten cheques virtuales que llegan por correo electrónico, y también pueden ir integrados en la tarjeta multibeneficio de Pluxee, ya sea física o virtual. Con esa tarjeta se puede pagar desde el móvil con Google Pay o Apple Pay.',
+  },
+  {
+    provider: 'pluxee',
+    category: 'guarderia',
+    content: 'Cheque guardería Pluxee: centros adheridos y qué hacer si el tuyo no lo está. La guardería tiene que estar adherida previamente, y se puede comprobar en el buscador de establecimientos de Pluxee. Si tu centro no está afiliado, puedes ponerte en contacto con Pluxee y solicitar su afiliación de forma gratuita a través del formulario de su web.',
+  },
+  {
+    provider: 'pluxee',
+    category: 'guarderia',
+    content: 'Cheque guardería Pluxee: cómo se solicita y cómo se consulta. La solicitud se tramita a través de tu empresa, que hace el pedido a Pluxee y te entrega los cheques. Desde la aplicación de Pluxee, disponible para iOS y Android, puedes consultar las transacciones, el saldo y el ahorro acumulado en tiempo real.',
+  },
+
+  // ── Pluxee · Transporte ───────────────────────────────────────────────────
+  // Fuente: pluxee.es/tarjeta-transporte · redactado de nuevo
+  {
+    provider: 'pluxee',
+    category: 'transporte',
+    content: 'La tarjeta de transporte de Pluxee se llama Ticket Transporte de Pluxee. Dónde se usa: en metro, autobús, tranvía y tren de cercanías, y también en Renfe, Ouigo e Iryo, incluidas sus páginas web. Además se puede usar en estancos, taquillas y máquinas expendedoras. Funciona en toda España.',
+  },
+  {
+    provider: 'pluxee',
+    category: 'transporte',
+    content: 'Ticket Transporte de Pluxee: activación, recarga y saldo. La tarjeta se activa descargando la aplicación de Pluxee o llamando al 900 800 777. La recarga es automática, con la periodicidad que decida tu empresa. El saldo y los movimientos se consultan desde la aplicación o llamando a ese mismo número.',
+  },
+  {
+    provider: 'pluxee',
+    category: 'transporte',
+    content: 'Ticket Transporte de Pluxee: pago con el móvil y caducidad. La aplicación de Pluxee está en App Store y Play Store, y la tarjeta es compatible con Google Pay y Apple Pay, así que se puede pagar directamente con el teléfono. La tarjeta caduca a los 48 meses desde su emisión.',
+  },
+  {
+    provider: 'pluxee',
+    category: 'transporte',
+    content: 'Ticket Transporte de Pluxee: atención al cliente. Si tienes cualquier problema, incidencia o duda con la tarjeta de transporte, el teléfono de atención de Pluxee es el 900 800 777. Ese mismo número sirve para activar la tarjeta y para consultar el saldo.',
+  },
+
   // ── Pendiente ─────────────────────────────────────────────────────────────
-  // pluxee × guarderia / transporte
   // up_spain / up_one  ×  comida / guarderia / transporte
   // Añadir aquí según se recopilen sus FAQs.
 ];

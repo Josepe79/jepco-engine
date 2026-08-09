@@ -15,6 +15,14 @@ const UPDATES = [
     content: 'Tarjeta Transporte: El límite mensual es de 136,36 €, sin superar los 1.500 € anuales. Al igual que la de comida, requiere solicitar la tarjeta física la primera vez, activarla en el móvil y se recarga el día uno de cada mes. Esta ventaja fiscal no se aplica en los territorios forales del País Vasco, es decir en Álava, Vizcaya y Guipúzcoa.',
   },
   {
+    // La edad la aporta la web de Pluxee, pero no es un dato suyo: el primer
+    // ciclo de Educación Infantil es la definición legal que da derecho a la
+    // exención. Va en el fragmento genérico para que también la tengan los
+    // usuarios de Edenred, cuya web no la menciona.
+    category: 'guarderia',
+    content: 'Guardería: La ventaja fiscal cubre el primer ciclo de Educación Infantil, es decir niños de 0 a 3 años. Exige tener al hijo o hija dado de alta en el sistema previamente, y el centro debe estar adherido al proveedor. Para tramitarlo se debe obtener e introducir el código digital específico de la guardería a través del enlace habilitado en el simulador.',
+  },
+  {
     // Se quitó "Tarjeta Cheque Gourmet" del texto: es la marca de Pluxee, y este
     // fragmento lo lee todo el mundo. A un empleado con tarjeta Edenred se le
     // estaba diciendo que solicitara la de otro proveedor. El nombre comercial
