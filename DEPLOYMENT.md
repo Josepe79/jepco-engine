@@ -267,8 +267,31 @@ En su lugar da un destino concreto, según de qué trate la duda:
 
 | Tipo de duda | A dónde deriva |
 |---|---|
-| Coberturas, condiciones, exclusiones o trámites de la póliza | Al mediador, con nombre, teléfono y email |
+| Coberturas y condiciones de la póliza | Al mediador, con nombre, teléfono y email |
 | Cualquier otra cosa | Al `escalationFallback` de esa marca |
+
+### Seguro de salud: qué responde y qué deriva
+
+Es la distinción más delicada del prompt, porque las dos cosas suenan igual
+para el usuario pero solo una está en el manual.
+
+| Responde el bot | Deriva al mediador |
+|---|---|
+| Límites de importe (500 € / 1.500 €) | Qué incluye o excluye la póliza |
+| Quién puede incluirse y hasta qué edad | Cuadro médico y especialidades |
+| Discapacidad y su límite | Reembolsos y reclamaciones |
+| Duración del contrato y requisitos | Altas y bajas con la aseguradora |
+| Cómo se contrata en la aplicación | |
+
+Si la pregunta es ambigua — "tengo dudas sobre el seguro de salud" — responde
+primero la parte fiscal y cierra mencionando al mediador para coberturas. **No
+escala**, porque sí ha respondido.
+
+Los botones de producto envían una pregunta explícita ("cómo funciona el seguro
+de Salud, qué límites tiene y quién puede incluirse") en lugar de un genérico
+"tengo dudas sobre X". Mejora la búsqueda semántica, y en Salud evita que una
+pregunta vaga se lea como consulta de coberturas y acabe derivada sin dar antes
+lo que sí sabemos.
 
 Los datos del mediador llegan por atributos del widget, así que cada empresa
 cliente configura el suyo al incrustarlo. **Mostrarlos no implica ninguna cesión

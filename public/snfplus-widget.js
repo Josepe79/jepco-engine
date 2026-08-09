@@ -48,14 +48,18 @@
 
     // ── Catálogos de opciones ──────────────────────────────────────────────────
 
+    // Cada producto lleva su pregunta explícita en vez de un genérico "tengo
+    // dudas sobre X". Dos motivos: la búsqueda semántica encuentra mucho mejor,
+    // y en Salud evita que una pregunta ambigua se interprete como consulta de
+    // coberturas y acabe derivada al mediador sin dar antes la parte fiscal.
     var PRODUCTS = [
-        { label: 'Ahorro',      category: 'ahorro' },
-        { label: 'Comedor',     category: 'comida' },
-        { label: 'Formación',   category: 'formacion' },
-        { label: 'Guardería',   category: 'guarderia' },
-        { label: 'Transporte',  category: 'transporte' },
-        { label: 'Salud',       category: 'salud' },
-        { label: 'Renting',     category: 'renting' },
+        { label: 'Ahorro',      category: 'ahorro',     message: 'Como funciona el producto de Ahorro y que limites tiene' },
+        { label: 'Comedor',     category: 'comida',     message: 'Como funciona el producto de Comedor y que limites tiene' },
+        { label: 'Formación',   category: 'formacion',  message: 'Como funciona el producto de Formacion y que limites tiene' },
+        { label: 'Guardería',   category: 'guarderia',  message: 'Como funciona el producto de Guarderia y que limites tiene' },
+        { label: 'Transporte',  category: 'transporte', message: 'Como funciona el producto de Transporte y que limites tiene' },
+        { label: 'Salud',       category: 'salud',      message: 'Como funciona el seguro de Salud, que limites de importe tiene y quien puede incluirse' },
+        { label: 'Renting',     category: 'renting',    message: 'Como funciona el producto de Renting y que limites tiene' },
     ];
 
     var APP_SECTIONS = [
@@ -542,7 +546,7 @@
         var html = '<div style="font-size:12px; margin-bottom:5px; color:#666">Elige un producto:</div>';
         html += '<div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px;">';
         PRODUCTS.forEach(function(p) {
-            html += '<button class="jepco-sub-btn" data-category="' + p.category + '">' + p.label + '</button>';
+            html += '<button class="jepco-sub-btn" data-category="' + p.category + '" data-msg="' + p.message + '">' + p.label + '</button>';
         });
         html += '<button class="jepco-sub-btn jepco-back-btn" style="grid-column: span 2">&#8592; Volver</button>';
         html += '</div>';
@@ -585,8 +589,8 @@
             btn.addEventListener('click', function() {
                 if (btn.classList.contains('jepco-back-btn')) { showMainMenu(); return; }
                 var category = btn.getAttribute('data-category');
-                var label    = btn.textContent.trim();
-                input.value = 'Tengo dudas sobre el producto: ' + label;
+                var msg      = btn.getAttribute('data-msg');
+                input.value = msg || ('Tengo dudas sobre el producto: ' + btn.textContent.trim());
                 quickActions.style.display = 'none';
                 sendMessage(category);
             });
