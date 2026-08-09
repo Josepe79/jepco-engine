@@ -181,6 +181,106 @@ async function getDeadChunks(where, brandId) {
 }
 
 /**
+ * Recorridos: la secuencia de pasos de cada sesión, en orden.
+ *
+ * Es la vista que responde a "¿por dónde pasó esta persona antes de atascarse?".
+ * Un escalado suelto dice que falta contenido; el recorrido dice además qué
+ * estaba intentando hacer cuando se atascó, que es lo que permite escribir el
+ * fragmento correcto en lugar de uno genérico.
+ */
+async function getJourneys(where, take = 25) {
+  const rows = await prisma.interaction.findMany({
+    where:   { ...where, conversationId: { not: null } },
+    orderBy: { createdAt: 'asc' },
+    select: {
+      id: true, conversationId: true, brandId: true, category: true,
+      question: true, answer: true, topSimilarity: true, escalated: true,
+      chunksFound: true, createdAt: true,
+    },
+  });
+
+  const byConversation = new Map();
+  for (const r of rows) {
+    if (!byConversation.has(r.conversationId)) byConversation.set(r.conversationId, []);
+    byConversation.get(r.conversationId).push(r);
+  }
+
+  const journeys = [...byConversation.entries()].map(([conversationId, steps]) => {
+    const first = steps[0];
+    const last  = steps[steps.length - 1];
+    return {
+      conversationId,
+      brandId:      first.brandId,
+      startedAt:    first.createdAt,
+      durationS:    Math.round((last.createdAt - first.createdAt) / 1000),
+      stepCount:    steps.length,
+      escalated:    steps.some(s => s.escalated),
+      steps: steps.map(s => ({
+        id:            s.id,
+        category:      s.category,
+        question:      s.question,
+        answer:        s.answer,
+        topSimilarity: s.topSimilarity,
+        escalated:     s.escalated,
+        chunksFound:   s.chunksFound,
+        // Semáforo por paso, para poder pintarlo sin recalcular en el cliente
+        health: s.escalated                      ? 'bad'
+              : s.chunksFound === 0              ? 'bad'
+              : s.topSimilarity == null          ? 'unknown'
+              : s.topSimilarity < WEAK_MATCH     ? 'weak'
+              : s.topSimilarity < STRONG_MATCH   ? 'ok'
+              :                                    'good',
+      })),
+    };
+  });
+
+  // Los más recientes primero, y los que acabaron mal delante: son los que hay
+  // que mirar.
+  journeys.sort((a, b) => {
+    if (a.escalated !== b.escalated) return a.escalated ? -1 : 1;
+    return b.startedAt - a.startedAt;
+  });
+
+  return journeys.slice(0, take);
+}
+
+/**
+ * Transiciones entre categorías: qué se pregunta después de qué.
+ *
+ * Un salto que se repite mucho suele significar que el menú obliga a dar un
+ * rodeo — esas dos cosas deberían estar juntas.
+ */
+async function getTransitions(where, take = 15) {
+  const rows = await prisma.interaction.findMany({
+    where:   { ...where, conversationId: { not: null } },
+    orderBy: [{ conversationId: 'asc' }, { createdAt: 'asc' }],
+    select:  { conversationId: true, category: true },
+  });
+
+  const counts = new Map();
+  for (let i = 1; i < rows.length; i++) {
+    const prev = rows[i - 1];
+    const cur  = rows[i];
+    if (prev.conversationId !== cur.conversationId) continue;
+
+    const from = prev.category || '(texto libre)';
+    const to   = cur.category  || '(texto libre)';
+    if (from === to) continue; // repetir en la misma sección no aporta
+
+    const key = `${from} → ${to}`;
+    counts.set(key, (counts.get(key) || 0) + 1);
+  }
+
+  return [...counts.entries()]
+    .map(([path, count]) => {
+      const [from, to] = path.split(' → ');
+      return { from, to, count };
+    })
+    .sort((a, b) => b.count - a.count)
+    .slice(0, take);
+}
+
+/**
  * Todo lo que necesita el panel en una sola llamada.
  */
 async function getOverview({ brandId = null, days = 7, take = 20 } = {}) {
@@ -189,6 +289,7 @@ async function getOverview({ brandId = null, days = 7, take = 20 } = {}) {
   const [
     summary, gaps, weakMatches, escalations, fidelityReview,
     emptyCategories, categoryUsage, freeText, rephrases, chunks,
+    journeys, transitions,
   ] = await Promise.all([
     getSummary(where),
     getGaps(where, take),
@@ -200,11 +301,15 @@ async function getOverview({ brandId = null, days = 7, take = 20 } = {}) {
     getFreeText(where, take),
     getRephrases(where, take),
     getDeadChunks(where, brandId),
+    getJourneys(where, take),
+    getTransitions(where),
   ]);
 
   return {
     meta: { brandId, days, generatedAt: new Date(), thresholds: { WEAK_MATCH, STRONG_MATCH, REPHRASE_WINDOW_S } },
     summary,
+    journeys,
+    transitions,
     gaps,
     weakMatches,
     escalations,
@@ -222,4 +327,5 @@ module.exports = {
   buildWhere, getOverview, getSummary, getGaps, getWeakMatches,
   getEscalations, getFidelityReview, getEmptyCategories,
   getCategoryUsage, getFreeText, getRephrases, getDeadChunks,
+  getJourneys, getTransitions,
 };

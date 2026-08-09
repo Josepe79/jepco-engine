@@ -1,15 +1,22 @@
 /**
  * Panel de administración: `/admin` y su API en `/api/admin/*`.
  *
- * Acceso por autenticación básica HTTP con cuentas nominales (ver
- * auth.service.js). Se eligió básica en lugar de un token en sessionStorage
- * porque el navegador se encarga de recordar la credencial: una vez validado
- * `/admin`, las llamadas `fetch` a la API la reenvían solas, sin que el panel
- * tenga que guardar nada.
+ * ACCESO
+ * ──────
+ * Dos vías, ambas contra las mismas cuentas nominales de ADMIN_USERS:
  *
- * Todo acceso queda registrado con el nombre de quien lo hizo. Detrás de esto
- * hay conversaciones de empleados: permitir el acceso no basta, hay que poder
- * decir quién accedió.
+ *   1. Sesión con cookie firmada — es la del navegador. Login en formulario,
+ *      cookie httpOnly + SameSite=Strict, y cierre de sesión de verdad (que el
+ *      diálogo de autenticación básica no permite).
+ *   2. Autenticación básica HTTP — para curl y scripts, sin pasar por el
+ *      formulario.
+ *
+ * La clave que firma las sesiones se deriva de ADMIN_USERS, así que revocar una
+ * cuenta editando esa variable invalida además todas las sesiones abiertas.
+ *
+ * Todo acceso queda registrado con el nombre de quien lo hizo: detrás de esto
+ * hay conversaciones de empleados, y permitir el acceso no basta — hay que
+ * poder decir quién accedió.
  */
 
 const fs     = require('fs');
@@ -20,11 +27,16 @@ const auth      = require('./services/auth.service');
 const analytics = require('./services/analytics.service');
 
 const PANEL_HTML = fs.readFileSync(path.join(__dirname, 'admin', 'panel.html'), 'utf8');
+const LOGIN_HTML = fs.readFileSync(path.join(__dirname, 'admin', 'login.html'), 'utf8');
 
 const ALLOWED_DAYS = new Set([1, 7, 30, 90]);
 
+// En local no hay HTTPS, y una cookie Secure no viajaría.
+const COOKIE_SECURE = process.env.NODE_ENV !== 'development';
+
 function registerAdminRoutes(fastify) {
-  const users = auth.parseUsers(config.ADMIN_USERS);
+  const users      = auth.parseUsers(config.ADMIN_USERS);
+  const signingKey = auth.sessionKey(config.ADMIN_USERS, config.UPLOAD_SECRET);
 
   if (users.size === 0) {
     fastify.log.warn(
@@ -35,34 +47,105 @@ function registerAdminRoutes(fastify) {
     fastify.log.info(`Panel de administración activo · cuentas: ${[...users.keys()].join(', ')}`);
   }
 
-  /**
-   * Exige autenticación básica válida.
-   * Devuelve el nombre de usuario, o null si ya ha respondido con un rechazo.
-   */
-  function requireAuth(request, reply) {
+  // Fastify solo interpreta JSON de serie; el formulario de login envía
+  // urlencoded. Se añade el parser aquí en vez de sumar una dependencia.
+  fastify.addContentTypeParser(
+    'application/x-www-form-urlencoded',
+    { parseAs: 'string' },
+    (_req, body, done) => {
+      try {
+        done(null, Object.fromEntries(new URLSearchParams(body)));
+      } catch (err) {
+        done(err);
+      }
+    }
+  );
+
+  /** Identifica al visitante por cookie de sesión o por autenticación básica. */
+  function identify(request) {
+    const token = auth.readCookie(request.headers.cookie, auth.SESSION_COOKIE);
+    const fromSession = auth.verifySessionToken(token, signingKey);
+    if (fromSession && users.has(fromSession)) return fromSession;
+
+    return auth.verifyBasicAuth(users, request.headers['authorization']);
+  }
+
+  function renderLogin(reply, errorMessage) {
+    const block = errorMessage
+      ? `<div class="error">${errorMessage}</div>`
+      : '';
+    return reply
+      .header('Content-Security-Policy',
+        "default-src 'self';base-uri 'self';script-src 'none';" +
+        "style-src 'self' 'unsafe-inline';form-action 'self';frame-ancestors 'none'")
+      .type('text/html; charset=utf-8')
+      .send(LOGIN_HTML.replace('__ERROR__', block));
+  }
+
+  /** Protege los endpoints de API. Devuelve el usuario o null si ya respondió. */
+  function requireApiAuth(request, reply) {
     if (users.size === 0) {
       reply.status(503).send({ error: 'Admin panel not configured' });
       return null;
     }
-
-    const viewer = auth.verifyBasicAuth(users, request.headers['authorization']);
+    const viewer = identify(request);
     if (!viewer) {
-      // El header WWW-Authenticate es lo que hace que el navegador muestre el
-      // diálogo de usuario y contraseña.
-      reply
-        .header('WWW-Authenticate', 'Basic realm="Jepco Engine", charset="UTF-8"')
-        .status(401)
-        .send({ error: 'Unauthorized' });
+      reply.status(401).send({ error: 'Unauthorized' });
       return null;
     }
     return viewer;
   }
 
+  // ── Login y logout ───────────────────────────────────────────────────────
+
+  fastify.post('/admin/login', {
+    config: {
+      // Freno a la fuerza bruta: scrypt ya encarece cada intento, esto limita
+      // cuántos se pueden encadenar.
+      rateLimit: { max: 10, timeWindow: '1 minute' },
+    },
+  }, async (request, reply) => {
+    if (users.size === 0) {
+      return reply.status(503).send({ error: 'Admin panel not configured' });
+    }
+
+    const { username = '', password = '' } = request.body || {};
+    const header = 'Basic ' + Buffer.from(`${username}:${password}`).toString('base64');
+    const viewer = auth.verifyBasicAuth(users, header);
+
+    if (!viewer) {
+      fastify.log.warn({ username, ip: request.ip }, 'Intento de acceso fallido al panel');
+      return renderLogin(reply, 'Usuario o contraseña incorrectos.');
+    }
+
+    fastify.log.info({ viewer, ip: request.ip }, 'Inicio de sesión en el panel');
+
+    return reply
+      .header('Set-Cookie', auth.sessionCookie(
+        auth.createSessionToken(viewer, signingKey),
+        { secure: COOKIE_SECURE }
+      ))
+      .redirect('/admin', 303);
+  });
+
+  fastify.post('/admin/logout', async (request, reply) => {
+    const viewer = identify(request);
+    if (viewer) fastify.log.info({ viewer, ip: request.ip }, 'Cierre de sesión');
+
+    return reply
+      .header('Set-Cookie', auth.sessionCookie('', { secure: COOKIE_SECURE }))
+      .redirect('/admin', 303);
+  });
+
   // ── Panel ────────────────────────────────────────────────────────────────
 
   fastify.get('/admin', async (request, reply) => {
-    const viewer = requireAuth(request, reply);
-    if (!viewer) return;
+    if (users.size === 0) {
+      return reply.status(503).send({ error: 'Admin panel not configured' });
+    }
+
+    const viewer = identify(request);
+    if (!viewer) return renderLogin(reply, '');
 
     fastify.log.info({ viewer, ip: request.ip }, 'Panel abierto');
 
@@ -79,6 +162,7 @@ function registerAdminRoutes(fastify) {
         "style-src 'self' 'unsafe-inline'",
         "img-src 'self' data:",
         "object-src 'none'",
+        "form-action 'self'",
         "frame-ancestors 'none'",
       ].join(';'))
       .type('text/html; charset=utf-8')
@@ -88,7 +172,7 @@ function registerAdminRoutes(fastify) {
   // ── API ──────────────────────────────────────────────────────────────────
 
   fastify.get('/api/admin/overview', async (request, reply) => {
-    const viewer = requireAuth(request, reply);
+    const viewer = requireApiAuth(request, reply);
     if (!viewer) return;
 
     const brandRaw = (request.query.brand || '').trim();
@@ -115,11 +199,11 @@ function registerAdminRoutes(fastify) {
 
   /**
    * Detalle de una conversación completa.
-   * Es el punto donde se accede a datos personales, así que el log lo refleja
-   * de forma explícita y separada de las consultas agregadas.
+   * Es el punto donde se accede a datos personales, así que se registra con
+   * nivel warn, separado de las consultas agregadas.
    */
   fastify.get('/api/admin/conversation/:id', async (request, reply) => {
-    const viewer = requireAuth(request, reply);
+    const viewer = requireApiAuth(request, reply);
     if (!viewer) return;
 
     const { id } = request.params;

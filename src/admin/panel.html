@@ -75,6 +75,40 @@
   .bar{display:inline-block;height:8px;background:var(--accent);border-radius:1px;
        vertical-align:middle;margin-right:8px;min-width:2px}
   .loading{padding:60px 0;text-align:center;color:var(--muted);font-family:var(--mono);font-size:.8rem}
+
+  /* ── Recorridos ─────────────────────────────────────────────── */
+  .journey{border-bottom:1px solid var(--rule-soft);padding:16px 0}
+  .journey.bad{background:linear-gradient(90deg,var(--crit-bg),transparent 60%)}
+  .j-head{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline;
+          font-family:var(--mono);font-size:.68rem;color:var(--muted);margin-bottom:10px}
+  .j-head .brand{color:var(--accent)}
+  .j-head .fail{color:var(--crit);font-weight:600}
+  .chain{display:flex;flex-wrap:wrap;align-items:stretch;gap:0}
+  .step{display:flex;align-items:stretch}
+  .step-box{border:1px solid var(--rule);border-left-width:3px;border-radius:3px;
+            padding:7px 10px;background:var(--surface);max-width:230px;min-width:110px}
+  .step-box .lab{font-family:var(--mono);font-size:.62rem;letter-spacing:.06em;
+                 text-transform:uppercase;color:var(--muted);display:block;margin-bottom:2px}
+  .step-box .q{font-size:.8rem;line-height:1.35;color:var(--ink);
+               display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .step-box .sc{font-family:var(--mono);font-size:.62rem;color:var(--muted);margin-top:3px;display:block}
+  .s-good{border-left-color:var(--ok)}
+  .s-ok{border-left-color:var(--accent)}
+  .s-weak{border-left-color:var(--warn)}
+  .s-bad{border-left-color:var(--crit)}
+  .s-unknown{border-left-color:var(--rule)}
+  .arrow{align-self:center;color:var(--muted);padding:0 7px;font-size:.9rem;flex:none}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;margin:0 0 14px;
+          font-family:var(--mono);font-size:.64rem;color:var(--muted)}
+  .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;
+            margin-right:4px;vertical-align:-1px;font-style:normal}
+  .flow{display:flex;align-items:center;gap:10px;padding:7px 0;
+        border-bottom:1px solid var(--rule-soft)}
+  .flow .cnt{font-family:var(--mono);font-variant-numeric:tabular-nums;
+             font-size:.8rem;min-width:34px;color:var(--accent);font-weight:600}
+  button.logout{font-family:var(--sans);font-size:.78rem;padding:5px 11px;cursor:pointer;
+        background:transparent;color:var(--muted);border:1px solid var(--rule);border-radius:3px}
+  button.logout:hover{color:var(--ink);border-color:var(--muted)}
   .err{background:var(--crit-bg);color:var(--crit);padding:14px;border-radius:3px;
        font-size:.87rem;margin-top:20px}
   .note{background:var(--warn-bg);color:var(--warn);padding:12px 14px;border-radius:3px;
@@ -105,6 +139,9 @@
         <option value="90">90 días</option>
       </select>
       <button class="refresh" id="refresh">Actualizar</button>
+      <form method="POST" action="/admin/logout" style="margin:0">
+        <button class="logout" type="submit">Salir</button>
+      </form>
     </div>
   </header>
 
@@ -154,6 +191,57 @@ function render(d) {
     $('out').innerHTML = h;
     return;
   }
+
+  // ── Recorridos ──────────────────────────────────────────────────────────
+  const dur = s => s < 60 ? `${s}s` : `${Math.floor(s/60)}m ${s%60}s`;
+  const stepBox = st => {
+    const label = st.category ? esc(st.category) : 'texto libre';
+    const score = st.escalated        ? 'escaló'
+                : st.chunksFound === 0 ? 'sin contexto'
+                : st.topSimilarity != null ? st.topSimilarity.toFixed(2) : '';
+    return `<div class="step"><div class="step-box s-${st.health}">
+      <span class="lab">${label}</span>
+      <span class="q">${esc(st.question)}</span>
+      <span class="sc">${score}</span></div></div>`;
+  };
+
+  h += section('Recorridos', d.journeys.length,
+    `La secuencia real de cada sesión, en orden. Un escalado suelto dice que falta
+     contenido; el recorrido dice además qué estaba intentando hacer la persona
+     cuando se atascó. Las sesiones que acabaron mal salen primero.`,
+    d.journeys.length ? `
+      <div class="legend">
+        <span><i style="background:var(--ok)"></i>buen match</span>
+        <span><i style="background:var(--accent)"></i>aceptable</span>
+        <span><i style="background:var(--warn)"></i>débil</span>
+        <span><i style="background:var(--crit)"></i>escaló o sin contexto</span>
+      </div>` + d.journeys.map(j => `
+      <div class="journey ${j.escalated ? 'bad' : ''}">
+        <div class="j-head">
+          <span class="brand">${esc(j.brandId)}</span>
+          <span>${when(j.startedAt)}</span>
+          <span>${j.stepCount} paso${j.stepCount === 1 ? '' : 's'}</span>
+          <span>${dur(j.durationS)}</span>
+          ${j.escalated ? '<span class="fail">terminó escalando</span>' : ''}
+        </div>
+        <div class="chain">${
+          j.steps.map(stepBox).join('<span class="arrow">→</span>')
+        }</div>
+      </div>`).join('')
+    : '<p class="empty">Nada que revisar en este periodo.</p>');
+
+  const maxFlow = Math.max(...d.transitions.map(t => t.count), 1);
+  h += section('Saltos entre secciones', d.transitions.length,
+    'Qué se pregunta después de qué. Un salto que se repite mucho suele significar que el menú obliga a dar un rodeo: esas dos secciones deberían estar juntas.',
+    d.transitions.length ? d.transitions.map(t => `
+      <div class="flow">
+        <span class="cnt">${t.count}</span>
+        <span class="bar" style="width:${t.count/maxFlow*90}px"></span>
+        ${cat(t.from === '(texto libre)' ? null : t.from)}
+        <span class="arrow">→</span>
+        ${cat(t.to === '(texto libre)' ? null : t.to)}
+      </div>`).join('')
+    : '<p class="empty">Aún no hay sesiones con varios pasos.</p>');
 
   h += section('Escalados', d.escalations.length,
     'La IA no pudo responder. Cada uno es un hueco confirmado en el conocimiento — máxima prioridad.',

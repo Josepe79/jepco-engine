@@ -280,7 +280,7 @@ sus propios errores: si falla, se pierde esa fila y el usuario no se entera.
 
 Interfaz web con todos los patrones, filtrable por marca y periodo.
 
-**Acceso.** Autenticación básica HTTP con cuentas nominales. Se crean así:
+**Acceso.** Página de login en `/admin`, contra cuentas nominales. Se crean así:
 
 ```bash
 node scratch/admin-user.js josep
@@ -289,6 +289,21 @@ node scratch/admin-user.js josep
 Imprime una contraseña aleatoria (que solo se muestra una vez) y la cadena
 `usuario:salt:hash` para pegar en `ADMIN_USERS`. Varias cuentas se separan por
 coma. Sin `ADMIN_USERS` definida, el panel responde 503.
+
+Hay dos vías de entrada, ambas contra las mismas cuentas:
+
+| Vía | Para qué |
+|---|---|
+| Formulario de login → cookie de sesión | El navegador. Dura 8 horas y permite cerrar sesión. |
+| Autenticación básica HTTP | `curl` y scripts, sin pasar por el formulario. |
+
+La cookie va firmada con HMAC, es `httpOnly` (el JavaScript de la página no
+puede leerla) y `SameSite=Strict` (no viaja desde otros sitios, lo que corta el
+CSRF). **La clave de firma se deriva de `ADMIN_USERS`**, así que quitar una
+cuenta de esa variable invalida además todas sus sesiones abiertas.
+
+El login está limitado a 10 intentos por minuto y por IP; sumado al coste de
+scrypt, hace inviable la fuerza bruta.
 
 **Por qué nominal y no una llave compartida:** detrás del panel hay
 conversaciones de empleados. Con un secreto único es imposible responder a
@@ -314,6 +329,19 @@ node scratch/patterns.js snfplus_rrhh 30  # una marca, 30 días
 
 El panel y el CLI comparten `src/services/analytics.service.js`, así que nunca
 pueden decir cosas distintas.
+
+**Recorridos.** La vista principal del panel: la secuencia real de pasos de cada
+sesión, en orden, con un semáforo por paso según lo bien que fue la
+recuperación. Las sesiones que acabaron escalando salen primero.
+
+Es lo que distingue "falta contenido" de "falta *este* contenido": un escalado
+suelto dice que hay un hueco, pero el recorrido dice qué estaba intentando hacer
+la persona cuando se atascó, que es lo que permite escribir el fragmento
+correcto en lugar de uno genérico.
+
+Debajo, **saltos entre secciones** agrega esos recorridos: qué se pregunta
+después de qué. Un salto que se repite mucho suele significar que el menú obliga
+a dar un rodeo.
 
 Cada patrón apunta a un fallo distinto, y cada uno se corrige de forma distinta:
 
