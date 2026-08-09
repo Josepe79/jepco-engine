@@ -34,6 +34,21 @@ const ALLOWED_DAYS = new Set([1, 7, 30, 90]);
 // En local no hay HTTPS, y una cookie Secure no viajaría.
 const COOKIE_SECURE = process.env.NODE_ENV !== 'development';
 
+/**
+ * Impide que el navegador guarde estas páginas.
+ *
+ * Hacen falta por dos motivos. El funcional: sin esto, al cerrar sesión el
+ * navegador servía el panel desde su caché tras el redirect, y parecía que el
+ * botón "Salir" no hacía nada. El de seguridad: el panel muestra conversaciones
+ * de empleados, y esas no deben quedarse en el disco de quien las consulta.
+ */
+function noStore(reply) {
+  return reply
+    .header('Cache-Control', 'no-store, no-cache, must-revalidate, private')
+    .header('Pragma', 'no-cache')
+    .header('Expires', '0');
+}
+
 function registerAdminRoutes(fastify) {
   const users      = auth.parseUsers(config.ADMIN_USERS);
   const signingKey = auth.sessionKey(config.ADMIN_USERS, config.UPLOAD_SECRET);
@@ -74,7 +89,7 @@ function registerAdminRoutes(fastify) {
     const block = errorMessage
       ? `<div class="error">${errorMessage}</div>`
       : '';
-    return reply
+    return noStore(reply)
       .header('Content-Security-Policy',
         "default-src 'self';base-uri 'self';script-src 'none';" +
         "style-src 'self' 'unsafe-inline';form-action 'self';frame-ancestors 'none'")
@@ -132,7 +147,7 @@ function registerAdminRoutes(fastify) {
     const viewer = identify(request);
     if (viewer) fastify.log.info({ viewer, ip: request.ip }, 'Cierre de sesión');
 
-    return reply
+    return noStore(reply)
       .header('Set-Cookie', auth.sessionCookie('', { secure: COOKIE_SECURE }))
       .redirect('/admin', 303);
   });
@@ -154,7 +169,7 @@ function registerAdminRoutes(fastify) {
     // la política con 'unsafe-inline', que valdría para cualquier inyección.
     const nonce = crypto.randomBytes(16).toString('base64');
 
-    return reply
+    return noStore(reply)
       .header('Content-Security-Policy', [
         "default-src 'self'",
         "base-uri 'self'",
@@ -190,6 +205,7 @@ function registerAdminRoutes(fastify) {
 
     try {
       const data = await analytics.getOverview({ brandId: brandRaw || null, days });
+      noStore(reply);
       return { viewer, ...data };
     } catch (err) {
       fastify.log.error({ err }, 'Fallo generando la analítica');
@@ -218,6 +234,7 @@ function registerAdminRoutes(fastify) {
       if (!conversation) {
         return reply.status(404).send({ error: 'Not found' });
       }
+      noStore(reply);
       return conversation;
     } catch (err) {
       fastify.log.error({ err }, 'Fallo recuperando la conversación');
