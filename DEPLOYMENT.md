@@ -317,8 +317,17 @@ widget) y el campo `provider` de los fragmentos.
    Transporte, y lo recuerda en `localStorage`. Aparece un enlace en el pie para
    corregirlo si se eligió mal.
 
-Preguntar es el plan B a propósito: mucha gente no distingue Up Spain de Up One,
+Preguntar es el plan B a propósito: mucha gente no distingue un emisor de otro,
 y una respuesta correcta del emisor equivocado es peor que no responder.
+
+**Al probar, ojo con esto:** la elección se guarda en `localStorage`, o sea por
+navegador. Si eliges Up Spain en Chrome y luego abres Firefox, Firefox vuelve a
+preguntar mientras Chrome sigue respondiendo como Up Spain. No es caché del
+widget ni un fallo: es que cada navegador tiene su propia respuesta guardada.
+Para empezar de cero, el enlace "Tarjeta: … · cambiar" del pie la borra.
+
+Ese enlace solo aparece cuando el emisor lo eligió el usuario. Si viene por
+`data-proveedor` el dato es fiable y no debe poder cambiarse desde el chat.
 
 ```bash
 node scratch/load-provider-faq.js            # todos los proveedores

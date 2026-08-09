@@ -329,17 +329,20 @@
             font-family: inherit;
         }
         #jepco-delete-link:hover { color: #999; text-decoration: underline; }
+        /* Más visible que "Borrar mis datos" a propósito: de este dato depende
+           que las respuestas sean las de tu emisor y no las de otro, así que
+           tiene que poder verse y corregirse de un vistazo. */
         #jepco-prov-link {
             font-size: 11px;
-            color: #ccc;
+            color: #777;
             background: none;
             border: none;
             cursor: pointer;
             padding: 0;
-            margin-right: 10px;
+            margin-right: 12px;
             font-family: inherit;
         }
-        #jepco-prov-link:hover { color: #999; text-decoration: underline; }
+        #jepco-prov-link:hover { color: ${CONFIG.primaryColor}; text-decoration: underline; }
         .jepco-action-btn {
             background: white;
             border: 1px solid ${CONFIG.primaryColor};
@@ -526,7 +529,9 @@
         if (CONFIG.proveedor) { provLink.style.display = 'none'; return; }
         var actual = getProveedor();
         if (!actual) { provLink.style.display = 'none'; return; }
-        provLink.textContent = 'Tarjeta: ' + (proveedorLabel(actual) || actual);
+        // Se nombra el emisor y se dice que se puede cambiar: sin lo segundo,
+        // quien se equivocó al elegir no tiene forma evidente de salir de ahí.
+        provLink.textContent = 'Tarjeta: ' + (proveedorLabel(actual) || actual) + ' · cambiar';
         provLink.style.display = 'inline';
     }
 
