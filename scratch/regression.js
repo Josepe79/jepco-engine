@@ -81,13 +81,12 @@ const CASES = [
   { id: 'trans-sin-proveedor', brand: 'snfplus_usuario', cat: 'transporte',
     q: '¿Dónde puedo usar la tarjeta de transporte?',
     expect: 'escalate', absent: ['cualquier lugar', 'cualquier sitio', 'metro'] },
-  // Control anti-invención. Ya no hay ningún emisor sin contenido, así que
-  // apunta a un hueco real: la web de Pluxee no dice qué hacer si pierdes la
-  // tarjeta de transporte. La de Edenred sí, y no debe tomarlo prestado.
-  { id: 'trans-hueco-perdida', brand: 'snfplus_usuario', cat: 'transporte', prov: 'pluxee',
-    q: 'He perdido la tarjeta de transporte, ¿cómo la bloqueo?',
+  // Control anti-invención. Up Spain no publica teléfono de atención en ninguna
+  // de sus páginas, así que no debe salir ninguno — y menos el de otro emisor.
+  { id: 'hueco-tel-upspain', brand: 'snfplus_usuario', cat: 'comida', prov: 'up_spain',
+    q: '¿A qué teléfono llamo si tengo una incidencia con la tarjeta?',
     expect: 'escalate',
-    absent: ['myedenred', 'clientes.edenred.es', '931 110 086'] },
+    absent: ['931 110 086', '919 100 757', '900 800 777'] },
 
   // ── Comida por emisor ───────────────────────────────────────────────────
   { id: 'com-edenred-nombre', brand: 'snfplus_usuario', cat: 'comida', prov: 'edenred',
@@ -158,10 +157,28 @@ const CASES = [
   { id: 'gua-edad-pluxee', brand: 'snfplus_usuario', cat: 'guarderia', prov: 'pluxee',
     q: '¿Hasta qué edad puedo usar el servicio de guardería?',
     expect: 'answer', contains: ['3'] },
-  // Hueco real: ninguna de las dos webs lo dice, no debe inventarlo
-  { id: 'gua-hueco-verano', brand: 'snfplus_usuario', cat: 'guarderia', prov: 'edenred',
-    q: '¿Qué pasa en julio y agosto si no hay guardería?',
-    expect: 'escalate' },
+  // Los once meses son normativa: aplican a los tres productos y a cualquier
+  // emisor, aunque ninguna web de proveedor lo mencione.
+  { id: 'gua-agosto', brand: 'snfplus_usuario', cat: 'guarderia', prov: 'edenred',
+    q: '¿Qué pasa en agosto si no hay guardería?',
+    expect: 'answer', contains: ['agosto'] },
+  { id: 'com-once-meses', brand: 'snfplus_usuario', cat: 'comida', prov: 'pluxee',
+    q: '¿Puedo usarla los doce meses del año?',
+    expect: 'answer', contains: ['once'] },
+  { id: 'trans-once-meses', brand: 'snfplus_usuario', cat: 'transporte', prov: 'up_spain',
+    q: '¿Cuántos meses al año puedo solicitar transporte?',
+    expect: 'answer', contains: ['once'] },
+
+  // El saldo no caduca, aunque la tarjeta sí. Son cosas distintas.
+  { id: 'com-saldo-no-caduca', brand: 'snfplus_usuario', cat: 'comida', prov: 'edenred',
+    q: '¿Pierdo el saldo que no gaste este mes?',
+    expect: 'answer', contains: ['no'] },
+  { id: 'com-saldo-tarjeta-nueva', brand: 'snfplus_usuario', cat: 'comida', prov: 'pluxee',
+    q: 'Si me dan una tarjeta nueva, ¿pierdo el saldo?',
+    expect: 'answer', contains: ['no'] },
+  { id: 'trans-pluxee-perdida', brand: 'snfplus_usuario', cat: 'transporte', prov: 'pluxee',
+    q: 'He perdido la tarjeta de transporte, ¿qué hago?',
+    expect: 'answer', contains: ['duplicado'], absent: ['931 110 086'] },
 
   // ── Pluxee: guardería y transporte ──────────────────────────────────────
   { id: 'gua-pluxee-nombre', brand: 'snfplus_usuario', cat: 'guarderia', prov: 'pluxee',

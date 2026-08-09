@@ -300,22 +300,29 @@ fragmentos ni interacciones asociadas.
 Al recopilar las FAQs de un emisor conviene revisar primero qué **no** cubre su
 web, y sobre todo distinguir qué es suyo y qué es normativa.
 
-Ha pasado tres veces, siempre igual: un emisor documenta algo que en realidad es
-normativa, y su web es la única donde aparece.
+Ha pasado cuatro veces, siempre igual: algo que parecía dato de un emisor
+resulta ser normativa que aplica a todos.
 
-| Dato | Lo aportaba | En realidad es |
+| Dato | Aparecía en | En realidad es |
 |---|---|---|
 | Guardería cubre de 0 a 3 años | Pluxee | Primer ciclo de Educación Infantil |
 | Comida no vale en supermercados | Pluxee | La exención del IRPF solo ampara restauración |
-| Guardería no tiene tope anual, salvo 1.000 € en el País Vasco | Up Spain | Régimen fiscal |
+| Guardería sin tope anual, salvo 1.000 € en el País Vasco | Up Spain | Régimen fiscal |
+| 136,36 € durante once mensualidades | Up Spain | Los once meses aplican a los tres productos |
 
-Los tres fueron al fragmento genérico, y desde ahí los responde cualquier emisor
-—también aquellos cuya web no los menciona—. Archivados bajo quien los aportó,
-el hueco habría seguido abierto para todos los demás.
+El último es el más ilustrativo. Se cargó como fragmento de Up Spain porque era
+su web la que lo decía; al preguntar por los meses sin escolarización se
+confirmó que **los once meses son norma general y agosto está cerrado por
+defecto en los tres productos**. El fragmento se movió al genérico y se retiró
+del de Up Spain, donde solo añadía ruido.
 
-Huecos que ninguna web cubre todavía: qué ocurre en los meses sin escolarización
-(guardería), la caducidad del saldo no consumido (comida) y el procedimiento de
-pérdida o robo en Pluxee.
+Los cuatro viven ahora en los fragmentos genéricos y los responde cualquier
+emisor, también aquellos cuya web no los menciona. Archivados bajo quien los
+aportó, el hueco habría seguido abierto para todos los demás.
+
+**Saldo y tarjeta son cosas distintas**, y conviene que no se confundan: la
+tarjeta de Pluxee caduca a los 48 meses, pero el saldo no caduca nunca, se
+acumula de mes a mes y viaja a la tarjeta nueva si hay que reponerla.
 
 Al actualizar un fragmento genérico con `update-chunk.js`, el borrado filtra por
 `provider IS NULL`. Sin ese filtro, tocar el texto genérico de transporte se
@@ -407,7 +414,7 @@ NODE_ENV=development PORT=3999 RATE_LIMIT_MAX=300 node src/index.js
 node scratch/regression.js
 ```
 
-Comprueba 51 casos: que responda lo que sabe, que escale lo que no, que cada
+Comprueba 56 casos: que responda lo que sabe, que escale lo que no, que cada
 emisor dé sus propios datos y que no aparezcan invenciones concretas
 (`absent: ['cualquier sitio']`, `absent: ['cheque gourmet']`, `absent:
 ['931 110 086']` en respuestas de Pluxee).
@@ -421,23 +428,24 @@ casos y aflojaba otros, y sin medir el conjunto era imposible saber si un cambio
 mejoraba o empeoraba. Con la suite, una idea que suena razonable se descarta en
 cinco minutos si no mueve el número.
 
-Marca actual: **49/51**. Los dos fallos que quedan son el mismo comportamiento:
-cuando falta el dato concreto que se pregunta, el modelo responde con lo
-genérico que sí tiene en vez de reconocer que no lo sabe.
+Marca actual: **54/56**, estable en dos ejecuciones seguidas.
+
+Los dos fallos que quedan son el mismo comportamiento: cuando falta el dato
+concreto que se pregunta, el modelo responde con lo genérico que sí tiene en vez
+de reconocer que no lo sabe, o al revés, escala teniendo algo aprovechable.
 
 Es poco útil, pero conviene ver qué **no** hace: no se inventa datos ni toma
-prestados los de otro emisor. Preguntado por cómo bloquear una tarjeta de Pluxee
-perdida —dato que su web no cubre— escala sin ofrecer el procedimiento de
-Edenred, que sí tiene delante. Todos los controles `absent` pasan.
+prestados los de otro emisor. Up Spain no publica teléfono en ninguna de sus
+páginas; preguntado por él, escala sin ofrecer el de Edenred ni el de Pluxee,
+que tiene en el mismo contexto. Todos los controles `absent` pasan.
 
-Van desapareciendo según se carga contenido: de los cuatro fallos que había al
-crear la suite, dos se resolvieron sin tocar una línea de código, solo cargando
-las FAQs que faltaban.
+De los cuatro fallos que había al crear la suite, tres se resolvieron **sin
+tocar una línea de código**, solo cargando el contenido que faltaba.
 
 **Sobre la variabilidad:** con temperatura 0.2 el resultado es casi estable, pero
 no del todo. Entre ejecuciones puede bailar un caso, normalmente alguno que ya
-estaba en el límite. Si un cambio mueve el número en uno, conviene repetir antes
-de sacar conclusiones; si lo mueve en tres o más, es real.
+estaba en el límite. Si un cambio mueve el número en uno, repite antes de sacar
+conclusiones; si lo mueve en tres o más, es real.
 
 ### Cómo se detecta un escalado
 

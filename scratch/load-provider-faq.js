@@ -125,6 +125,13 @@ const CHUNKS = [
     category: 'comida',
     content: 'Tarjeta Restaurante Pluxee: atención al cliente y ayuda. Si tienes cualquier problema, incidencia o duda con la tarjeta, puedes llamar al teléfono de atención de Pluxee, el 900 800 777. Es el mismo número para consultar el PIN.',
   },
+  {
+    // Su web no documenta el procedimiento de pérdida. Confirmado con SNF+:
+    // contactar con Pluxee y pedir duplicado.
+    provider: 'pluxee',
+    category: 'comida',
+    content: 'Tarjeta Restaurante Pluxee: pérdida, robo o deterioro. Si pierdes la tarjeta, te la roban o se estropea, contacta con Pluxee en el 900 800 777 y solicita un duplicado. El saldo que tuvieras no se pierde: viaja automáticamente a la tarjeta nueva.',
+  },
 
   // ── Pluxee · Guardería ────────────────────────────────────────────────────
   // Fuente: pluxee.es/cheque-guarderia · redactado de nuevo
@@ -166,6 +173,12 @@ const CHUNKS = [
     category: 'transporte',
     content: 'Ticket Transporte de Pluxee: atención al cliente. Si tienes cualquier problema, incidencia o duda con la tarjeta de transporte, el teléfono de atención de Pluxee es el 900 800 777. Ese mismo número sirve para activar la tarjeta y para consultar el saldo.',
   },
+  {
+    // Su web tampoco lo documenta para transporte. Mismo procedimiento.
+    provider: 'pluxee',
+    category: 'transporte',
+    content: 'Ticket Transporte de Pluxee: pérdida, robo o deterioro. Si pierdes la tarjeta de transporte, te la roban o se estropea, contacta con Pluxee en el 900 800 777 y solicita un duplicado. El saldo que tuvieras viaja automáticamente a la tarjeta nueva.',
+  },
 
   // ── Up Spain · Comida ─────────────────────────────────────────────────────
   // Fuente: up-spain.com/cheque-gourmet · redactado de nuevo
@@ -192,11 +205,10 @@ const CHUNKS = [
     category: 'transporte',
     content: 'Up transporte: formato y forma de pago. Puede llevarse como tarjeta física contactless o directamente en el móvil, y es compatible con los principales servicios de pago por móvil. Up Spain dispone además de una aplicación propia de Up transporte para gestionarla.',
   },
-  {
-    provider: 'up_spain',
-    category: 'transporte',
-    content: 'Up transporte: cómo se reparte el importe. El máximo exento son 136,36 € al mes durante un máximo de once mensualidades, lo que suma los 1.500 € anuales que permite la exención fiscal.',
-  },
+  // Aquí había un fragmento sobre "136,36 € durante once mensualidades" tomado
+  // de su web. Resultó no ser un dato de Up Spain sino la norma de los once
+  // meses, que aplica a los tres productos y a todos los emisores, así que vive
+  // en los fragmentos genéricos. Repetirlo aquí solo añadía ruido.
 
   // ── Up Spain · Guardería ──────────────────────────────────────────────────
   // Fuente: up-spain.com/cheque-guarderia · redactado de nuevo
