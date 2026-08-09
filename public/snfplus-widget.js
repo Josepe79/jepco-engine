@@ -541,6 +541,29 @@
         addMessage('Vale. Te preguntaré por tu tarjeta la próxima vez que consultes Comedor, Guardería o Transporte.', 'ai');
     });
 
+    /**
+     * Avisa al abrir el chat de qué emisor se está usando, si lo eligió el
+     * usuario en su día.
+     *
+     * El enlace del pie no basta: la elección se recuerda entre sesiones y en
+     * silencio, así que alguien puede estar recibiendo respuestas de Up Spain
+     * semanas después de haberlo elegido sin acordarse. Decirlo una vez al
+     * abrir, donde sí se lee, evita esa sorpresa.
+     *
+     * No aplica cuando el emisor lo pasa la aplicación: ahí el dato es correcto
+     * por construcción y el aviso solo sería ruido.
+     */
+    function avisarProveedorRecordado() {
+        if (CONFIG.proveedor) return;
+        var actual = getProveedor();
+        if (!actual) return;
+        addMessage(
+            'Recuerdo que tu tarjeta es de ' + (proveedorLabel(actual) || actual) +
+            ', así que te respondo con su información. Si no es correcto, puedes cambiarlo abajo.',
+            'ai'
+        );
+    }
+
     document.getElementById('jepco-delete-link').addEventListener('click', function() {
         // Confirmación inline — no usamos confirm() porque se bloquea en iframes
         var existing = document.getElementById('jepco-delete-confirm');
@@ -827,6 +850,7 @@
         consentPanel.style.display   = 'none';
         gdprFooter.style.display     = 'block';
         refreshProvLink();
+        avisarProveedorRecordado();
         showMainMenu();
     } else {
         consentPanel.style.display   = 'block';
