@@ -288,9 +288,9 @@ node scratch/load-provider-faq.js edenred    # solo uno
 |---|---|---|---|
 | Edenred | 5 | 4 | 4 |
 | Pluxee | 4 | 3 | 4 |
-| Up Spain | 2 | — | 3 |
+| Up Spain | 2 | 3 | 3 |
 
-Falta Up Educainfantil, el producto de guardería de Up Spain.
+Los nueve pares emisor/producto están cubiertos.
 
 **Hubo un cuarto emisor, `up_one`, que se retiró.** No era tal: venía de un
 cambio de productos de Up Spain, y UpONE es su plataforma digital. Se quitó de
@@ -300,21 +300,22 @@ fragmentos ni interacciones asociadas.
 Al recopilar las FAQs de un emisor conviene revisar primero qué **no** cubre su
 web, y sobre todo distinguir qué es suyo y qué es normativa.
 
-Ha pasado dos veces ya:
+Ha pasado tres veces, siempre igual: un emisor documenta algo que en realidad es
+normativa, y su web es la única donde aparece.
 
-- La web de Pluxee dice que la guardería cubre el primer ciclo de Educación
-  Infantil, de 0 a 3 años. No es un dato de Pluxee sino la definición legal que
-  da derecho a la exención.
-- La de Pluxee también explica que la tarjeta de comida no vale en supermercados
-  porque la exención del IRPF solo ampara establecimientos de restauración. Otra
-  vez normativa, no política suya.
+| Dato | Lo aportaba | En realidad es |
+|---|---|---|
+| Guardería cubre de 0 a 3 años | Pluxee | Primer ciclo de Educación Infantil |
+| Comida no vale en supermercados | Pluxee | La exención del IRPF solo ampara restauración |
+| Guardería no tiene tope anual, salvo 1.000 € en el País Vasco | Up Spain | Régimen fiscal |
 
-Los dos fueron al fragmento genérico, y desde ahí los responde cualquier emisor
-—incluidos Edenred y Up Spain, cuyas webs no los mencionan—. Archivados bajo
-Pluxee habrían dejado el hueco abierto para todos los demás.
+Los tres fueron al fragmento genérico, y desde ahí los responde cualquier emisor
+—también aquellos cuya web no los menciona—. Archivados bajo quien los aportó,
+el hueco habría seguido abierto para todos los demás.
 
 Huecos que ninguna web cubre todavía: qué ocurre en los meses sin escolarización
-(guardería) y la caducidad del saldo no consumido (comida).
+(guardería), la caducidad del saldo no consumido (comida) y el procedimiento de
+pérdida o robo en Pluxee.
 
 Al actualizar un fragmento genérico con `update-chunk.js`, el borrado filtra por
 `provider IS NULL`. Sin ese filtro, tocar el texto genérico de transporte se
@@ -406,7 +407,7 @@ NODE_ENV=development PORT=3999 RATE_LIMIT_MAX=300 node src/index.js
 node scratch/regression.js
 ```
 
-Comprueba 46 casos: que responda lo que sabe, que escale lo que no, que cada
+Comprueba 51 casos: que responda lo que sabe, que escale lo que no, que cada
 emisor dé sus propios datos y que no aparezcan invenciones concretas
 (`absent: ['cualquier sitio']`, `absent: ['cheque gourmet']`, `absent:
 ['931 110 086']` en respuestas de Pluxee).
@@ -420,18 +421,23 @@ casos y aflojaba otros, y sin medir el conjunto era imposible saber si un cambio
 mejoraba o empeoraba. Con la suite, una idea que suena razonable se descarta en
 cinco minutos si no mueve el número.
 
-Marca actual: **43/46**. Los tres fallos que quedan son en realidad **el mismo
-comportamiento**: cuando falta el dato concreto que se pregunta, el modelo
-responde con lo genérico que sí tiene en vez de reconocer que no lo sabe.
+Marca actual: **49/51**. Los dos fallos que quedan son el mismo comportamiento:
+cuando falta el dato concreto que se pregunta, el modelo responde con lo
+genérico que sí tiene en vez de reconocer que no lo sabe.
 
 Es poco útil, pero conviene ver qué **no** hace: no se inventa datos ni toma
-prestados los de otro emisor. Preguntado por el nombre de la tarjeta de un
-emisor sin contenido cargado, describe la ventaja fiscal en general — nunca
-contesta "Cheque Gourmet" ni "Ticket Restaurant". Todos los controles `absent`
-pasan.
+prestados los de otro emisor. Preguntado por cómo bloquear una tarjeta de Pluxee
+perdida —dato que su web no cubre— escala sin ofrecer el procedimiento de
+Edenred, que sí tiene delante. Todos los controles `absent` pasan.
 
-Van desapareciendo según se carga contenido: al completar Pluxee, dos de los
-cuatro fallos anteriores se resolvieron sin tocar una línea de código.
+Van desapareciendo según se carga contenido: de los cuatro fallos que había al
+crear la suite, dos se resolvieron sin tocar una línea de código, solo cargando
+las FAQs que faltaban.
+
+**Sobre la variabilidad:** con temperatura 0.2 el resultado es casi estable, pero
+no del todo. Entre ejecuciones puede bailar un caso, normalmente alguno que ya
+estaba en el límite. Si un cambio mueve el número en uno, conviene repetir antes
+de sacar conclusiones; si lo mueve en tres o más, es real.
 
 ### Cómo se detecta un escalado
 

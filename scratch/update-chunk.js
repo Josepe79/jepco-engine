@@ -20,7 +20,7 @@ const UPDATES = [
     // exención. Va en el fragmento genérico para que también la tengan los
     // usuarios de Edenred, cuya web no la menciona.
     category: 'guarderia',
-    content: 'Guardería: La ventaja fiscal cubre el primer ciclo de Educación Infantil, es decir niños de 0 a 3 años. Exige tener al hijo o hija dado de alta en el sistema previamente, y el centro debe estar adherido al proveedor. Para tramitarlo se debe obtener e introducir el código digital específico de la guardería a través del enlace habilitado en el simulador.',
+    content: 'Guardería: La ventaja fiscal cubre el primer ciclo de Educación Infantil, es decir niños de 0 a 3 años. A diferencia de comida y transporte, la exención de guardería no tiene límite anual de importe, salvo en el País Vasco, donde el máximo son 1.000 € al año. Exige tener al hijo o hija dado de alta en el sistema previamente, y el centro debe estar adherido al proveedor. Para tramitarlo se debe obtener e introducir el código digital específico de la guardería a través del enlace habilitado en el simulador.',
   },
   {
     // Dos correcciones sobre el texto original:

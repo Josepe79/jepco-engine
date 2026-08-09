@@ -198,8 +198,23 @@ const CHUNKS = [
     content: 'Up transporte: cómo se reparte el importe. El máximo exento son 136,36 € al mes durante un máximo de once mensualidades, lo que suma los 1.500 € anuales que permite la exención fiscal.',
   },
 
-  // ── Pendiente ─────────────────────────────────────────────────────────────
-  // up_spain × guarderia (Up Educainfantil)
+  // ── Up Spain · Guardería ──────────────────────────────────────────────────
+  // Fuente: up-spain.com/cheque-guarderia · redactado de nuevo
+  {
+    provider: 'up_spain',
+    category: 'guarderia',
+    content: 'El producto de guardería de Up Spain se llama Up educainfantil, también conocido como cheque guardería. Funciona con cheques virtuales, sin ningún cheque físico circulando: Up Spain hace una transferencia bancaria directa a la escuela infantil.',
+  },
+  {
+    provider: 'up_spain',
+    category: 'guarderia',
+    content: 'Up educainfantil: cuándo se paga al centro y qué pasa si no cuadra el importe. Las transferencias a las escuelas infantiles se procesan el último día hábil de cada mes. Si hay diferencia entre el importe gestionado por Up Spain y la cuota real de la guardería, el empleado abona esa diferencia al centro por sus medios habituales.',
+  },
+  {
+    provider: 'up_spain',
+    category: 'guarderia',
+    content: 'Up educainfantil: centros adheridos y cambios. Up Spain tiene una red de más de 16.500 escuelas infantiles adheridas en toda España, y dispone de un buscador en su web para localizar las afiliadas. El centro debe estar adherido previamente. Se puede cambiar de guardería sin salir del sistema, y conviene comunicar el cambio tanto a la empresa como al centro.',
+  },
 ];
 
 async function main() {

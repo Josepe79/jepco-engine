@@ -81,13 +81,13 @@ const CASES = [
   { id: 'trans-sin-proveedor', brand: 'snfplus_usuario', cat: 'transporte',
     q: '¿Dónde puedo usar la tarjeta de transporte?',
     expect: 'escalate', absent: ['cualquier lugar', 'cualquier sitio', 'metro'] },
-  // Control anti-invención. Up Spain aún no tiene guardería cargada, y el
-  // nombre comercial solo puede salir de un fragmento de emisor: si responde,
-  // se lo ha inventado o lo ha tomado prestado de otro proveedor.
-  { id: 'gua-sin-faq-emisor', brand: 'snfplus_usuario', cat: 'guarderia', prov: 'up_spain',
-    q: '¿Cómo se llama el producto de guardería de mi proveedor?',
+  // Control anti-invención. Ya no hay ningún emisor sin contenido, así que
+  // apunta a un hueco real: la web de Pluxee no dice qué hacer si pierdes la
+  // tarjeta de transporte. La de Edenred sí, y no debe tomarlo prestado.
+  { id: 'trans-hueco-perdida', brand: 'snfplus_usuario', cat: 'transporte', prov: 'pluxee',
+    q: 'He perdido la tarjeta de transporte, ¿cómo la bloqueo?',
     expect: 'escalate',
-    absent: ['cheque guardería', 'cheque guarderia', 'educainfantil', 'myedenred'] },
+    absent: ['myedenred', 'clientes.edenred.es', '931 110 086'] },
 
   // ── Comida por emisor ───────────────────────────────────────────────────
   { id: 'com-edenred-nombre', brand: 'snfplus_usuario', cat: 'comida', prov: 'edenred',
@@ -170,6 +170,25 @@ const CASES = [
   { id: 'gua-pluxee-no-adherida', brand: 'snfplus_usuario', cat: 'guarderia', prov: 'pluxee',
     q: 'Mi guardería no está adherida, ¿qué puedo hacer?',
     expect: 'answer', contains: ['pluxee'] },
+
+  // ── Up Spain: guardería ─────────────────────────────────────────────────
+  { id: 'gua-upspain-nombre', brand: 'snfplus_usuario', cat: 'guarderia', prov: 'up_spain',
+    q: '¿Cómo se llama el producto de guardería de mi proveedor?',
+    expect: 'answer', contains: ['educainfantil'], absent: ['pluxee', 'edenred'] },
+  { id: 'gua-upspain-cuando-paga', brand: 'snfplus_usuario', cat: 'guarderia', prov: 'up_spain',
+    q: '¿Cuándo se paga a la guardería?',
+    expect: 'answer', contains: ['ultimo dia habil'] },
+  { id: 'gua-upspain-diferencia', brand: 'snfplus_usuario', cat: 'guarderia', prov: 'up_spain',
+    q: '¿Qué pasa si la cuota es más alta que lo que me gestionan?',
+    expect: 'answer', contains: ['diferencia'] },
+
+  // El límite de guardería es normativa: lo debe saber cualquier emisor
+  { id: 'gua-limite-generico', brand: 'snfplus_usuario', cat: 'guarderia', prov: 'edenred',
+    q: '¿Hay un máximo anual para la guardería?',
+    expect: 'answer', contains: ['limite'] },
+  { id: 'gua-limite-euskadi', brand: 'snfplus_usuario', cat: 'guarderia', prov: 'pluxee',
+    q: 'Vivo en el País Vasco, ¿cambia algo en la guardería?',
+    expect: 'answer', contains: ['1.000'] },
   { id: 'trans-pluxee-donde', brand: 'snfplus_usuario', cat: 'transporte', prov: 'pluxee',
     q: '¿Dónde puedo usar la tarjeta de transporte?',
     expect: 'answer', contains: ['metro'], absent: ['931 110 086'] },
