@@ -287,7 +287,7 @@ node scratch/load-provider-faq.js edenred    # solo uno
 | | Comida | Guardería | Transporte |
 |---|---|---|---|
 | Edenred | 5 | 4 | 4 |
-| Pluxee | — | — | — |
+| Pluxee | 4 | — | — |
 | Up Spain | — | — | — |
 | Up One | — | — | — |
 
@@ -378,6 +378,29 @@ Si en algún momento se quiere hacer, la forma limpia es que **lo dispare el
 usuario**: el bot ofrece enviarlo, pide el email, y solo entonces se remite. Así
 la acción es explícita e informada, va solo esa consulta, y de paso se resuelve
 el problema del contacto de vuelta.
+
+### Suite de regresión
+
+```bash
+# Con el servidor levantado y sin límite de peticiones estorbando:
+NODE_ENV=development PORT=3999 RATE_LIMIT_MAX=300 node src/index.js
+node scratch/regression.js
+```
+
+Comprueba 32 casos: que responda lo que sabe, que escale lo que no, que cada
+emisor dé sus propios datos y que no aparezcan invenciones concretas
+(`absent: ['cualquier sitio']`, `absent: ['cheque gourmet']`).
+
+**Existe porque afinar el prompt a ojo no funciona.** Cada retoque arreglaba unos
+casos y aflojaba otros, y sin medir el conjunto era imposible saber si un cambio
+mejoraba o empeoraba. Con la suite, una idea que suena razonable se descarta en
+cinco minutos si no mueve el número.
+
+Marca actual: **28/32**. Los cuatro fallos restantes son respuestas poco útiles,
+no invenciones: cuando un emisor no tiene contenido operativo cargado, el modelo
+rellena con la parte fiscal en vez de reconocer que no lo sabe ("la tarjeta de
+transporte sirve para transporte"). Nada de lo que dice es falso, pero tampoco
+responde. Desaparecerán solos según se carguen las FAQs que faltan.
 
 ### Cómo se detecta un escalado
 

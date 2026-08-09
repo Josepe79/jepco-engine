@@ -103,8 +103,32 @@ const CHUNKS = [
     content: 'Guardería con Edenred: consultas y atención al cliente. La gestión y el seguimiento de los pagos se hacen desde la aplicación MyEdenred España, disponible para iOS y Android, o desde el área de clientes de su web. Para cualquier incidencia puedes llamar al 931 110 086 o al 919 100 757, de lunes a jueves de 9 a 18 horas y los viernes de 8 a 15 horas.',
   },
 
+  // ── Pluxee · Comida ───────────────────────────────────────────────────────
+  // Fuente: pluxee.es/tarjeta-restaurante · redactado de nuevo
+  {
+    provider: 'pluxee',
+    category: 'comida',
+    content: 'La tarjeta de comida de Pluxee se llama Tarjeta Restaurante Pluxee. Dónde se usa: en establecimientos de restauración de su red, es decir restaurantes y cafeterías, y también en las plataformas de comida a domicilio que forman parte de esa red. No se puede usar en supermercados: la exención fiscal del IRPF solo permite usarla en establecimientos de restauración.',
+  },
+  {
+    provider: 'pluxee',
+    category: 'comida',
+    content: 'Tarjeta Restaurante Pluxee: activación y PIN. Cada empleado activa su tarjeta desde la aplicación de Pluxee. Durante ese proceso también puede enlazarla con Google Pay o Apple Pay. El PIN de la tarjeta se consulta desde la propia aplicación, o llamando al 900 800 777.',
+  },
+  {
+    provider: 'pluxee',
+    category: 'comida',
+    content: 'Tarjeta Restaurante Pluxee: aplicación, saldo y pago con el móvil. La aplicación de Pluxee está disponible en Google Play y en la App Store, y desde ella se consultan el saldo y los movimientos de la tarjeta. La tarjeta es compatible con Google Pay y Apple Pay, así que se puede pagar directamente con el móvil.',
+  },
+  {
+    provider: 'pluxee',
+    category: 'comida',
+    content: 'Tarjeta Restaurante Pluxee: atención al cliente y ayuda. Si tienes cualquier problema, incidencia o duda con la tarjeta, puedes llamar al teléfono de atención de Pluxee, el 900 800 777. Es el mismo número para consultar el PIN.',
+  },
+
   // ── Pendiente ─────────────────────────────────────────────────────────────
-  // pluxee / up_spain / up_one  ×  comida / guarderia / transporte
+  // pluxee × guarderia / transporte
+  // up_spain / up_one  ×  comida / guarderia / transporte
   // Añadir aquí según se recopilen sus FAQs.
 ];
 
