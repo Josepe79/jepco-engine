@@ -3,6 +3,19 @@
 
     const GDPR_KEY  = 'jepco_snfplus_consent';
     const UID_KEY   = 'jepco_snfplus_uid';
+    const PROV_KEY  = 'jepco_snfplus_proveedor';
+
+    // Emisores de tarjeta. Afectan solo a Comida, Guardería y Transporte: son
+    // quienes emiten la tarjeta y determinan dónde se usa, con qué app y a quién
+    // se llama. La parte fiscal es idéntica con cualquiera de ellos.
+    var PROVIDERS = [
+        { id: 'edenred',  label: 'Edenred'  },
+        { id: 'pluxee',   label: 'Pluxee'   },
+        { id: 'up_spain', label: 'Up Spain' },
+        { id: 'up_one',   label: 'Up One'   },
+    ];
+    // Categorías cuya respuesta depende del emisor
+    var PROVIDER_CATEGORIES = ['comida', 'guarderia', 'transporte'];
 
     const CONFIG = {
         brandId:   (_script && _script.getAttribute('data-brand-id')) || 'snfplus_usuario',
@@ -14,6 +27,12 @@
         mediador:      (_script && _script.getAttribute('data-mediador'))       || null,
         mediadorEmail: (_script && _script.getAttribute('data-mediador-email')) || null,
         mediadorTel:   (_script && _script.getAttribute('data-mediador-tel'))   || null,
+        // Emisor de la tarjeta. Lo ideal es que lo pase la aplicación, que ya
+        // sabe de qué empresa es el usuario. Si no viene, se le pregunta una vez
+        // y se recuerda — pero preguntar es el plan B: el usuario a menudo no
+        // distingue Up Spain de Up One, y responder con los datos del emisor
+        // equivocado es peor que no responder.
+        proveedor: (_script && _script.getAttribute('data-proveedor')) || null,
         baseUrl: (function() {
             if (_script && _script.getAttribute('data-api-url')) {
                 return _script.getAttribute('data-api-url').replace(/\/$/, '');
@@ -45,6 +64,25 @@
 
     CONFIG.apiUrl    = CONFIG.baseUrl + '/api/chat';
     CONFIG.deleteUrl = CONFIG.baseUrl + '/api/my-data/' + CONFIG.userId;
+
+    // El proveedor configurado por la aplicación manda siempre. El elegido a
+    // mano solo se usa cuando no viene ninguno.
+    function getProveedor() {
+        if (CONFIG.proveedor) return CONFIG.proveedor;
+        try { return localStorage.getItem(PROV_KEY) || null; } catch (e) { return null; }
+    }
+    function setProveedor(id) {
+        try { localStorage.setItem(PROV_KEY, id); } catch (e) {}
+    }
+    function proveedorLabel(id) {
+        for (var i = 0; i < PROVIDERS.length; i++) {
+            if (PROVIDERS[i].id === id) return PROVIDERS[i].label;
+        }
+        return null;
+    }
+    function necesitaProveedor(category) {
+        return PROVIDER_CATEGORIES.indexOf(category) !== -1 && !getProveedor();
+    }
 
     // ── Catálogos de opciones ──────────────────────────────────────────────────
 
@@ -292,6 +330,17 @@
             font-family: inherit;
         }
         #jepco-delete-link:hover { color: #999; text-decoration: underline; }
+        #jepco-prov-link {
+            font-size: 11px;
+            color: #ccc;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            margin-right: 10px;
+            font-family: inherit;
+        }
+        #jepco-prov-link:hover { color: #999; text-decoration: underline; }
         .jepco-action-btn {
             background: white;
             border: 1px solid ${CONFIG.primaryColor};
@@ -408,6 +457,7 @@
                 </button>
             </div>
             <div id="jepco-gdpr-footer">
+                <button id="jepco-prov-link" style="display:none"></button>
                 <button id="jepco-delete-link">Borrar mis datos</button>
             </div>
         </div>
@@ -459,6 +509,7 @@
         consentPanel.style.display  = 'none';
         inputContainer.style.display = 'flex';
         gdprFooter.style.display    = 'block';
+        refreshProvLink();
         showMainMenu();
     }
 
@@ -466,6 +517,24 @@
 
     document.getElementById('jepco-consent-reject').addEventListener('click', function() {
         consentPanel.innerHTML = '<p style="text-align:center;color:#666;font-size:13px;padding:16px 0">Para usar el chat es necesario aceptar el aviso de privacidad.</p>';
+    });
+
+    // Enlace para corregir el emisor elegido a mano. No aparece si lo configura
+    // la aplicación: en ese caso el dato es fiable y no debe poder cambiarse.
+    var provLink = document.getElementById('jepco-prov-link');
+
+    function refreshProvLink() {
+        if (CONFIG.proveedor) { provLink.style.display = 'none'; return; }
+        var actual = getProveedor();
+        if (!actual) { provLink.style.display = 'none'; return; }
+        provLink.textContent = 'Tarjeta: ' + (proveedorLabel(actual) || actual);
+        provLink.style.display = 'inline';
+    }
+
+    provLink.addEventListener('click', function() {
+        try { localStorage.removeItem(PROV_KEY); } catch (e) {}
+        refreshProvLink();
+        addMessage('Vale. Te preguntaré por tu tarjeta la próxima vez que consultes Comedor, Guardería o Transporte.', 'ai');
     });
 
     document.getElementById('jepco-delete-link').addEventListener('click', function() {
@@ -584,13 +653,49 @@
         });
     }
 
+    /**
+     * Pregunta el emisor de la tarjeta antes de continuar.
+     * Solo aparece si la aplicación no lo ha configurado.
+     */
+    function showProviderPicker(category, message) {
+        var html = '<div style="font-size:12px; margin-bottom:6px; color:#666">'
+                 + '¿Qué tarjeta te da tu empresa?</div>';
+        html += '<div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px;">';
+        PROVIDERS.forEach(function(p) {
+            html += '<button class="jepco-sub-btn jepco-prov-btn" data-prov="' + p.id + '">'
+                  + p.label + '</button>';
+        });
+        html += '</div>';
+        html += '<div style="font-size:11px; color:#999; margin-top:6px">'
+              + 'Lo recordaremos para las próximas consultas.</div>';
+        quickActions.innerHTML = html;
+        quickActions.style.display = 'flex';
+
+        quickActions.querySelectorAll('.jepco-prov-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                setProveedor(btn.getAttribute('data-prov'));
+                refreshProvLink();
+                input.value = message;
+                quickActions.style.display = 'none';
+                sendMessage(category);
+            });
+        });
+    }
+
     function bindProductSubButtons() {
         quickActions.querySelectorAll('.jepco-sub-btn').forEach(function(btn) {
             btn.addEventListener('click', function() {
                 if (btn.classList.contains('jepco-back-btn')) { showMainMenu(); return; }
                 var category = btn.getAttribute('data-category');
-                var msg      = btn.getAttribute('data-msg');
-                input.value = msg || ('Tengo dudas sobre el producto: ' + btn.textContent.trim());
+                var msg      = btn.getAttribute('data-msg')
+                             || ('Tengo dudas sobre el producto: ' + btn.textContent.trim());
+
+                // Comida, guardería y transporte dependen del emisor
+                if (necesitaProveedor(category)) {
+                    showProviderPicker(category, msg);
+                    return;
+                }
+                input.value = msg;
                 quickActions.style.display = 'none';
                 sendMessage(category);
             });
@@ -632,6 +737,7 @@
                     brandId:  CONFIG.brandId,
                     userId:   CONFIG.userId,
                     category: category || null,
+                    provider: getProveedor(),
                     appUrl:   CONFIG.appUrl  || null,
                     mediador:      CONFIG.mediador      || null,
                     mediadorEmail: CONFIG.mediadorEmail || null,
@@ -688,6 +794,7 @@
     if (hasConsent()) {
         consentPanel.style.display   = 'none';
         gdprFooter.style.display     = 'block';
+        refreshProvLink();
         showMainMenu();
     } else {
         consentPanel.style.display   = 'block';

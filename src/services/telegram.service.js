@@ -61,7 +61,7 @@ async function recordInteraction(data) {
  */
 async function handleMessage(brandId, platform, userId, text, ctx = null, options = {}) {
   const startedAt = Date.now();
-  const { category = null } = options;
+  const { category = null, provider = null } = options;
   try {
     // 1. Get or create conversation
     let conversation = await db.conversation.findFirst({
@@ -107,6 +107,7 @@ async function handleMessage(brandId, platform, userId, text, ctx = null, option
       question:         text,
       answer:           aiResult.text,
       category:         category || null,
+      provider:         provider || null,
       categoryFallback: Boolean(r.categoryFallback),
       chunksFound:      r.chunksFound   ?? 0,
       topSimilarity:    r.topSimilarity ?? null,

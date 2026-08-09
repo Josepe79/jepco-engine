@@ -57,6 +57,11 @@ const ALLOWED_CATEGORIES = new Set([
 ]);
 const MAX_MESSAGE_LENGTH = 1000;
 
+// Emisores de tarjeta configurados. Solo afectan a Comida, Guardería y
+// Transporte: son quienes emiten la tarjeta y determinan dónde se usa, con qué
+// app y a quién se llama. La parte fiscal es igual con cualquiera de ellos.
+const ALLOWED_PROVIDERS = new Set(['edenred', 'pluxee', 'up_spain', 'up_one']);
+
 // ── CORS ───────────────────────────────────────────────────────────────────────
 
 /**
@@ -227,7 +232,7 @@ function registerRoutes() {
       },
     },
   }, async (request, reply) => {
-    const { brandId, userId, message, category,
+    const { brandId, userId, message, category, provider,
             appUrl, mediador, mediadorEmail, mediadorTel } = request.body || {};
 
     if (!brandId || !userId || !message) {
@@ -242,11 +247,14 @@ function registerRoutes() {
     if (category && !ALLOWED_CATEGORIES.has(category)) {
       return reply.status(400).send({ error: 'Invalid category' });
     }
+    if (provider && !ALLOWED_PROVIDERS.has(provider)) {
+      return reply.status(400).send({ error: 'Invalid provider' });
+    }
 
     try {
       const result = await telegram.handleMessage(
         brandId, 'WEB', userId, message, null,
-        { category, appUrl, mediador, mediadorEmail, mediadorTel }
+        { category, provider, appUrl, mediador, mediadorEmail, mediadorTel }
       );
       return {
         reply:  result.text,

@@ -53,6 +53,17 @@ function stripMarkdown(text) {
 const genAI = new GoogleGenerativeAI(config.GEMINI_API_KEY, { apiVersion: 'v1' });
 
 /**
+ * Cuántos fragmentos se pasan como contexto.
+ *
+ * Subido de 3 a 5 al introducir los proveedores: una categoría como transporte
+ * ya contiene el fragmento genérico más los del emisor, y con tres se quedaba
+ * fuera justo el que respondía la pregunta. Con datos de un solo proveedor
+ * activo el límite real por consulta ronda los cuatro, así que cinco deja
+ * margen sin inflar el prompt.
+ */
+const RETRIEVAL_LIMIT = 5;
+
+/**
  * @param {object} options  Contexto del entorno que incrusta el widget.
  *   Va en objeto y no como parámetros sueltos porque ya son demasiados: cuando
  *   eran posicionales, `category` acabó colándose en el hueco de `ctx` y la
@@ -62,7 +73,7 @@ async function getAIResponse(brandId, userMessage, history = [], options = {}) {
   const brand = config.BRANDS[brandId];
   if (!brand) throw new Error('Unknown brand');
 
-  const { category = null, appUrl = null,
+  const { category = null, appUrl = null, provider = null,
           mediador = null, mediadorEmail = null, mediadorTel = null } = options;
 
   const safeAppUrl        = sanitizeParam(appUrl, 200);
@@ -93,13 +104,13 @@ async function getAIResponse(brandId, userMessage, history = [], options = {}) {
 
   try {
     const queryEmbedding = await vectorService.generateEmbedding(userMessage);
-    let similarChunks = await vectorService.findSimilarDocuments(brandId, queryEmbedding, 3, category);
+    let similarChunks = await vectorService.findSimilarDocuments(brandId, queryEmbedding, RETRIEVAL_LIMIT, category, provider);
 
     // Si la categoría pedida no devuelve nada, se reintenta sin filtro.
     // Que esto ocurra es en sí una señal: esa categoría no tiene contenido.
     if (similarChunks.length === 0 && category !== null) {
       retrieval.categoryFallback = true;
-      similarChunks = await vectorService.findSimilarDocuments(brandId, queryEmbedding, 3, null);
+      similarChunks = await vectorService.findSimilarDocuments(brandId, queryEmbedding, 3, null, provider);
     }
 
     if (similarChunks.length > 0) {
@@ -136,8 +147,9 @@ SEGURO DE SALUD — distingue siempre entre estas dos cosas:
 CUANDO NO SEPAS LA RESPUESTA:
 9. Nunca digas que has avisado a nadie, ni que alguien va a contactar al usuario. No es cierto y no puede cumplirse. Di simplemente que no tienes esa información y a quién puede dirigirse.
 10. Si no encuentras la respuesta en la INFORMACIÓN RECUPERADA, empieza obligatoriamente por "[ESCALAR_A_HUMANO]" y continúa así:
-   - Si la duda es del seguro o la póliza: "No tengo esa información. Esa consulta la resuelve tu mediador: ${mediadorRef}."
-   - En cualquier otro caso: "No tengo esa información. Consúltalo con ${brand.escalationFallback || 'el equipo de soporte'}."
+   - SOLO si la duda es sobre coberturas o condiciones del SEGURO DE SALUD: "No tengo esa información. Esa consulta la resuelve tu mediador: ${mediadorRef}."
+   - En cualquier otro caso, incluidas las tarjetas de comida, guardería y transporte: "No tengo esa información. Consúltalo con ${brand.escalationFallback || 'el equipo de soporte'}."
+   El mediador es de seguros: no lo menciones nunca en dudas que no sean de la póliza de salud.
 11. La etiqueta [ESCALAR_A_HUMANO] va una sola vez y siempre al principio. Nunca la expliques ni la menciones en el texto.`;
 
   const model = genAI.getGenerativeModel({
@@ -192,16 +204,18 @@ CUANDO NO SEPAS LA RESPUESTA:
     force: category === 'salud',
   });
 
-  // El escalado no puede depender solo de que el modelo acuerde poner la
-  // etiqueta: a veces responde "No tengo esa información" y la omite. Cuando eso
-  // pasa el escalado se pierde — no sale en el panel ni avisa por Telegram — y
-  // el fallo es invisible, porque al usuario le llega la respuesta correcta.
+  // El escalado se decide por el TEXTO, no por la etiqueta del modelo.
   //
-  // Por eso se comprueba también el texto, cuya redacción exacta imponemos
-  // desde el prompt.
+  // La etiqueta falla en las dos direcciones: unas veces responde "No tengo esa
+  // información" y se olvida de ponerla — y el hueco se perdía sin aparecer en
+  // el panel —, y otras la pone y a continuación responde perfectamente, lo que
+  // llenaba el panel de huecos inexistentes.
+  //
+  // El texto sí es fiable porque su redacción exacta la imponemos en el prompt:
+  // toda respuesta de "no lo sé" empieza por esa frase. La etiqueta se sigue
+  // limpiando de la salida, pero ya no decide nada.
   const SIN_RESPUESTA = /^\s*no tengo esa informaci[óo]n/i;
-  const shouldEscalate = rawText.includes('[ESCALAR_A_HUMANO]')
-                      || SIN_RESPUESTA.test(cleanText);
+  const shouldEscalate = SIN_RESPUESTA.test(cleanText);
 
   return {
     text: cleanText,

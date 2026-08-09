@@ -11,8 +11,8 @@ const BRAND_ID = 'snfplus_usuario';
 
 const UPDATES = [
   {
-    category: 'retribucion_general',
-    content: 'La retribución flexible de SNF+ te permite destinar parte de tu salario a productos con ventajas fiscales. Los productos disponibles son: Ahorro, Comedor, Formación, Guardería, Transporte, Salud y Renting. La retribución en especie no puede superar el 30% de tu salario bruto anual.',
+    category: 'transporte',
+    content: 'Tarjeta Transporte: El límite mensual es de 136,36 €, sin superar los 1.500 € anuales. Al igual que la de comida, requiere solicitar la tarjeta física la primera vez, activarla en el móvil y se recarga el día uno de cada mes. Esta ventaja fiscal no se aplica en los territorios forales del País Vasco, es decir en Álava, Vizcaya y Guipúzcoa.',
   },
 ];
 
@@ -25,9 +25,13 @@ async function main() {
     const embedding = await vectorService.generateEmbedding(update.content);
     const vectorString = `[${embedding.join(',')}]`;
 
-    // Borrar el chunk existente de esa categoría
+    // Borra solo el fragmento genérico de esa categoría.
+    // El filtro por "provider" IS NULL es imprescindible: sin él, actualizar el
+    // texto genérico de transporte se llevaría por delante las FAQs de Edenred,
+    // Pluxee y compañía, que comparten categoría.
     const deleted = await prisma.$executeRawUnsafe(
-      `DELETE FROM "KnowledgeChunk" WHERE "brandId" = $1 AND "category" = $2`,
+      `DELETE FROM "KnowledgeChunk"
+        WHERE "brandId" = $1 AND "category" = $2 AND "provider" IS NULL`,
       BRAND_ID, update.category
     );
 

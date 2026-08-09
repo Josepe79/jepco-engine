@@ -38,9 +38,18 @@ model KnowledgeChunk {
   embedding Unsupported("vector(3072)")?
   metadata  Json?    // Nombre del archivo, página, etc.
   category  String?  // Ej: Comedor, Salud, General...
+  /// Proveedor al que pertenece este fragmento (edenred, pluxee, up_spain,
+  /// up_one). Null = contenido genérico, válido para todos.
+  ///
+  /// Existe porque en Comida, Guardería y Transporte hay dos capas: la fiscal
+  /// (límites, requisitos) es legal e idéntica para todos, y la operativa
+  /// (dónde se usa la tarjeta, qué app, atención al cliente) cambia con el
+  /// emisor. Guardarlo así evita duplicar la parte fiscal una vez por proveedor.
+  provider  String?
   createdAt DateTime @default(now())
 
   @@index([brandId])
+  @@index([brandId, category, provider])
 }
 
 /// Un registro por intercambio pregunta/respuesta.
@@ -65,6 +74,9 @@ model Interaction {
   /// Categoría que envió el widget. Null = el usuario escribió texto libre,
   /// lo que revela qué no cubre el menú de botones.
   category String?
+  /// Proveedor activo en esa consulta. Permite ver en el panel si un emisor
+  /// concreto acumula huecos, que suele significar que faltan sus FAQs.
+  provider String?
 
   // ── Qué encontró la búsqueda semántica ────────────────────────────────────
 

@@ -22,20 +22,30 @@ async function generateEmbedding(text) {
 }
 
 /**
- * Realiza una búsqueda de similitud de coseno en la base de datos.
- * @param {string} brandId - El ID de la marca para filtrar.
- * @param {number[]} queryEmbedding - El vector de consulta.
- * @param {number} limit - Número máximo de resultados.
- * @returns {Promise<any[]>}
+ * Búsqueda por similitud de coseno sobre la base de conocimiento.
+ *
+ * @param {string}   brandId
+ * @param {number[]} queryEmbedding
+ * @param {number}   limit
+ * @param {string?}  category  Acota a una sección concreta.
+ * @param {string?}  provider  Emisor de la tarjeta (edenred, pluxee, …).
+ *
+ * Sobre el proveedor: los fragmentos con `provider = NULL` son genéricos y
+ * entran siempre; los que llevan proveedor solo entran si coincide con el del
+ * usuario. Así la parte fiscal —idéntica para todos— se guarda una sola vez, y
+ * la operativa —dónde se usa la tarjeta, qué app— queda acotada a su emisor.
+ *
+ * Sin proveedor conocido se devuelve solo lo genérico: es preferible no
+ * responder a responder con los datos del emisor equivocado.
  */
-async function findSimilarDocuments(brandId, queryEmbedding, limit = 5, category = null) {
+async function findSimilarDocuments(brandId, queryEmbedding, limit = 5, category = null, provider = null) {
   try {
-    // Usamos $queryRaw para realizar la búsqueda vectorial con pgvector
-    // La similitud de coseno es 1 - (embedding <=> vector)
+    // pgvector: la similitud de coseno es 1 - (embedding <=> vector)
     const vectorString = `[${queryEmbedding.join(',')}]`;
-    
+
     let query = `
-      SELECT id, content, metadata, 1 - (embedding <=> $1::vector) as similarity
+      SELECT id, content, metadata, "provider",
+             1 - (embedding <=> $1::vector) as similarity
       FROM "KnowledgeChunk"
       WHERE "brandId" = $2
     `;
@@ -43,16 +53,21 @@ async function findSimilarDocuments(brandId, queryEmbedding, limit = 5, category
     const params = [vectorString, brandId];
 
     if (category) {
-      query += ` AND "category" = $3`;
       params.push(category);
+      query += ` AND "category" = $${params.length}`;
     }
 
-    query += ` ORDER BY similarity DESC LIMIT $${params.length + 1}`;
+    if (provider) {
+      params.push(provider);
+      query += ` AND ("provider" IS NULL OR "provider" = $${params.length})`;
+    } else {
+      query += ` AND "provider" IS NULL`;
+    }
+
     params.push(limit);
+    query += ` ORDER BY similarity DESC LIMIT $${params.length}`;
 
-    const results = await prisma.$queryRawUnsafe(query, ...params);
-
-    return results;
+    return await prisma.$queryRawUnsafe(query, ...params);
   } catch (error) {
     console.error('Error finding similar documents:', error);
     throw error;

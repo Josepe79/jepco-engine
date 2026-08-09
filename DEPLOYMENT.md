@@ -244,6 +244,48 @@ node scratch/load-gestor-manual.js   # recarga los 5 de gestor
 node scratch/update-chunk.js         # editar el array UPDATES para casos sueltos
 ```
 
+### Proveedores de tarjeta
+
+En Comida, Guardería y Transporte hay dos capas de información:
+
+| Capa | Ejemplo | Dónde vive |
+|---|---|---|
+| **Fiscal** — igual para todos | 136,36 €/mes, 1.500 €/año, territorios forales | `provider = NULL` |
+| **Operativa** — cambia con el emisor | Dónde se usa, qué app, atención al cliente | `provider = 'edenred'` |
+
+Por eso hay una columna `provider` en vez de categorías tipo `transporte_edenred`:
+con 3 productos y 4 emisores serían doce categorías, y habría que duplicar la
+parte fiscal cuatro veces. Cuando cambie un límite legal, se toca una sola fila.
+
+La búsqueda aplica `provider IS NULL OR provider = ?`, así que lo genérico entra
+siempre y lo específico solo para su emisor. **Sin proveedor conocido solo se
+devuelve lo genérico**: es preferible no responder a responder con los datos del
+emisor equivocado.
+
+Emisores configurados: `edenred`, `pluxee`, `up_spain`, `up_one`. El id debe
+coincidir en tres sitios: `ALLOWED_PROVIDERS` (`src/index.js`), `PROVIDERS` (el
+widget) y el campo `provider` de los fragmentos.
+
+**Cómo sabe el widget el emisor.** Por orden de preferencia:
+
+1. El atributo `data-proveedor`, que renderiza la aplicación según la empresa
+   del usuario. Es la vía buena: el dato es fiable y no hay fricción.
+2. Si no viene, el widget pregunta una vez al entrar en Comedor, Guardería o
+   Transporte, y lo recuerda en `localStorage`. Aparece un enlace en el pie para
+   corregirlo si se eligió mal.
+
+Preguntar es el plan B a propósito: mucha gente no distingue Up Spain de Up One,
+y una respuesta correcta del emisor equivocado es peor que no responder.
+
+```bash
+node scratch/load-provider-faq.js            # todos los proveedores
+node scratch/load-provider-faq.js edenred    # solo uno
+```
+
+Al actualizar un fragmento genérico con `update-chunk.js`, el borrado filtra por
+`provider IS NULL`. Sin ese filtro, tocar el texto genérico de transporte se
+llevaría por delante las FAQs de todos los emisores, que comparten categoría.
+
 ### Categorías reconocidas
 
 Al añadir una categoría nueva hay que darla de alta en `ALLOWED_CATEGORIES`
@@ -324,13 +366,17 @@ el problema del contacto de vuelta.
 
 ### Cómo se detecta un escalado
 
-No basta con la etiqueta `[ESCALAR_A_HUMANO]` del modelo: a veces responde que
-no sabe y la omite. Cuando eso ocurría, el escalado no se registraba — no salía
-en el panel ni avisaba por Telegram — y el fallo era invisible, porque al
-usuario le llegaba la respuesta correcta.
+**Por el texto de la respuesta, no por la etiqueta del modelo.**
 
-Por eso se comprueba la etiqueta **y** el texto de la respuesta, cuya redacción
-exacta se impone desde el prompt.
+La etiqueta `[ESCALAR_A_HUMANO]` falla en las dos direcciones. Unas veces el
+modelo responde que no sabe y se olvida de ponerla: ese hueco no se registraba,
+no salía en el panel ni avisaba por Telegram, y el fallo era invisible porque al
+usuario le llegaba la respuesta correcta. Otras veces la pone y a continuación
+responde perfectamente: eso llenaba el panel de huecos que no existían.
+
+El texto sí es fiable porque su redacción la imponemos nosotros: toda respuesta
+de "no lo sé" empieza por "No tengo esa información". La etiqueta se sigue
+limpiando de la salida, pero ya no decide nada.
 
 ---
 
