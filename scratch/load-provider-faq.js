@@ -76,8 +76,34 @@ const CHUNKS = [
     content: 'Tarjeta de comida de Edenred: pérdida, robo y atención al cliente. Si pierdes la tarjeta o te la roban, puedes bloquearla tú mismo desde la aplicación MyEdenred o desde tu cuenta en clientes.edenred.es. También puedes llamar al 931 110 086 o al 919 100 757, de lunes a jueves de 9 a 18 horas y los viernes de 8 a 15 horas. El centro de ayuda está en edenred.es/ayuda.',
   },
 
+  // ── Edenred · Guardería ───────────────────────────────────────────────────
+  // Fuente: edenred.es/ticket-guarderia/usuarios · redactado de nuevo
+  //
+  // Guardería no funciona con tarjeta: el pago va al centro. Por eso aquí no
+  // hay activación, PIN ni saldo, y en cambio importan la adhesión del centro y
+  // los cambios de guardería.
+  {
+    provider: 'edenred',
+    category: 'guarderia',
+    content: 'Guardería con Edenred: cómo funciona el pago. No hay tarjeta física, la gestión es totalmente digital y el pago se hace directamente a la guardería. Hay dos modalidades: Direct, en la que gestionas tú el pago, y Direct Plus, en la que Edenred se encarga de que el pago llegue al centro de forma automática.',
+  },
+  {
+    provider: 'edenred',
+    category: 'guarderia',
+    content: 'Guardería con Edenred: centros adheridos y qué hacer si el tuyo no lo está. Edenred tiene una red de guarderías asociadas y dispone de un buscador en su web para comprobar si un centro concreto está adherido. Si tu guardería todavía no forma parte de la red, puedes recomendarla a través del formulario de contacto de su web para que se pongan en contacto con ella.',
+  },
+  {
+    provider: 'edenred',
+    category: 'guarderia',
+    content: 'Guardería con Edenred: cambios de centro y bajas. Si cambias de guardería, basta con avisar antes de la fecha prevista del siguiente pago. Si tu hijo o hija deja la guardería antes de que termine el curso no hay ningún problema, se puede gestionar sin inconveniente.',
+  },
+  {
+    provider: 'edenred',
+    category: 'guarderia',
+    content: 'Guardería con Edenred: consultas y atención al cliente. La gestión y el seguimiento de los pagos se hacen desde la aplicación MyEdenred España, disponible para iOS y Android, o desde el área de clientes de su web. Para cualquier incidencia puedes llamar al 931 110 086 o al 919 100 757, de lunes a jueves de 9 a 18 horas y los viernes de 8 a 15 horas.',
+  },
+
   // ── Pendiente ─────────────────────────────────────────────────────────────
-  // edenred × guarderia
   // pluxee / up_spain / up_one  ×  comida / guarderia / transporte
   // Añadir aquí según se recopilen sus FAQs.
 ];

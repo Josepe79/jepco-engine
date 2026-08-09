@@ -282,6 +282,21 @@ node scratch/load-provider-faq.js            # todos los proveedores
 node scratch/load-provider-faq.js edenred    # solo uno
 ```
 
+**Estado del contenido por emisor:**
+
+| | Comida | Guardería | Transporte |
+|---|---|---|---|
+| Edenred | 5 | 4 | 4 |
+| Pluxee | — | — | — |
+| Up Spain | — | — | — |
+| Up One | — | — | — |
+
+Al recopilar las FAQs de un emisor conviene revisar primero qué **no** cubre su
+web. En Edenred faltan la edad máxima de los hijos y qué ocurre en los meses sin
+escolarización (guardería), y la caducidad del saldo (comida). Son preguntas
+frecuentes, así que seguirán apareciendo como huecos en el panel hasta que se
+consigan de su centro de ayuda o preguntándoles directamente.
+
 Al actualizar un fragmento genérico con `update-chunk.js`, el borrado filtra por
 `provider IS NULL`. Sin ese filtro, tocar el texto genérico de transporte se
 llevaría por delante las FAQs de todos los emisores, que comparten categoría.
