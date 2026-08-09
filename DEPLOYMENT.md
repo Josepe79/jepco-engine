@@ -154,9 +154,19 @@ Verificable con las cabeceras `x-ratelimit-limit`, `x-ratelimit-remaining` y
 
 ### Dos detalles que importan
 
-**`trustProxy` es obligatorio en Railway.** El servidor está detrás de un proxy;
-sin `trustProxy: true` en el constructor de Fastify, `req.ip` devuelve la IP
-interna del proxy y **todos los usuarios comparten la misma cuota**.
+**`trustProxy` es obligatorio en Railway, pero con un número, no con `true`.**
+El servidor está detrás de un proxy: sin `trustProxy`, `req.ip` devuelve la IP
+interna del proxy y todos los usuarios comparten la misma cuota.
+
+El valor correcto es `trustProxy: 1`. Con `true` se confía en **toda** la cadena
+`X-Forwarded-For`, incluida la parte que escribe el cliente, así que bastaba
+mandar una cabecera inventada distinta en cada petición para estrenar cupo cada
+vez — el límite no servía absolutamente de nada. Comprobado: siete peticiones
+con siete IPs falsas pasaban todas.
+
+Con `1` solo se confía en el salto que añade Railway, que es el único que no se
+puede falsificar desde fuera. Si algún día hay más proxies delante (un CDN),
+hay que subir el número al total de saltos de confianza.
 
 **El contador vive en memoria.** Si escaláis a varias instancias, cada una lleva
 su propio recuento y el límite efectivo se multiplica por el número de

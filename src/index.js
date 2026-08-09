@@ -23,7 +23,16 @@ const fastify = require('fastify')({
   logger: true,
   // Railway sirve detrás de un proxy. Sin esto, `req.ip` devuelve la IP interna
   // del proxy y todos los visitantes comparten la misma clave de rate limit.
-  trustProxy: true,
+  //
+  // Es 1, no `true`, y la diferencia importa: con `true` se confía en toda la
+  // cadena X-Forwarded-For, incluida la parte que escribe el cliente. Cualquiera
+  // podía mandar una cabecera inventada y estrenar cupo en cada petición, con lo
+  // que el límite no servía de nada. Con 1 se confía solo en el salto que añade
+  // Railway, que es el único que no podemos falsificar desde fuera.
+  //
+  // Si algún día hay más de un proxy delante (un CDN, por ejemplo), hay que
+  // subir este número al total de saltos de confianza.
+  trustProxy: 1,
 });
 
 const crypto        = require('crypto');
