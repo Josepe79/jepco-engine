@@ -8,6 +8,35 @@ function sanitizeParam(value, maxLen) {
   return String(value).replace(/[\r\n\t]/g, ' ').slice(0, maxLen).trim();
 }
 
+/**
+ * Garantiza que los datos de contacto del mediador salgan cuando toca.
+ *
+ * No se deja en manos del modelo. Aunque el prompt se los da, unas veces los
+ * escribe enteros, otras los resume a "contacta con tu mediador" y otras se los
+ * salta entero para no pasarse del límite de frases. Como el dato es fijo y no
+ * depende de la conversación, se impone aquí.
+ *
+ * @param {boolean} force  Añadir el cierre aunque el modelo no haya mencionado
+ *                         al mediador. Se usa en consultas de salud, donde la
+ *                         norma de negocio es indicarlo siempre.
+ */
+function ensureMediadorContact(text, contacto, { force = false } = {}) {
+  if (!contacto || !text) return text;
+  if (text.includes(contacto)) return text;
+
+  // Sustituye una referencia genérica ("con tu mediador") por los datos reales
+  const generico = /\s*\b(?:a|con)?\s*(?:tu|el|su)\s+mediador(?:\s+de\s+(?:la\s+)?p[óo]liza)?/i;
+  if (generico.test(text)) {
+    return text.replace(generico, ' con ' + contacto).replace(/\s{2,}/g, ' ');
+  }
+
+  if (force) {
+    const sep = /[.!?]\s*$/.test(text) ? ' ' : '. ';
+    return `${text.trimEnd()}${sep}Para coberturas y condiciones de la póliza, contacta con ${contacto}.`;
+  }
+  return text;
+}
+
 function stripMarkdown(text) {
   return text
     .replace(/\*\*(.*?)\*\*/g, '$1')
@@ -154,8 +183,14 @@ CUANDO NO SEPAS LA RESPUESTA:
     throw geminiError;
   }
 
-  const rawText   = result.response.text();
-  const cleanText = stripMarkdown(rawText.replaceAll('[ESCALAR_A_HUMANO]', ''));
+  const rawText = result.response.text();
+  let cleanText = stripMarkdown(rawText.replaceAll('[ESCALAR_A_HUMANO]', ''));
+
+  // En consultas de salud la norma de negocio es indicar siempre el mediador
+  // para coberturas, aunque la respuesta en sí sea de fiscalidad.
+  cleanText = ensureMediadorContact(cleanText, mediadorContacto, {
+    force: category === 'salud',
+  });
 
   // El escalado no puede depender solo de que el modelo acuerde poner la
   // etiqueta: a veces responde "No tengo esa información" y la omite. Cuando eso

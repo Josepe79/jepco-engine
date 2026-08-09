@@ -298,6 +298,14 @@ cliente configura el suyo al incrustarlo. **Mostrarlos no implica ninguna cesió
 de datos**: son datos de contacto profesional de una empresa, no datos
 personales del usuario.
 
+**El contacto lo pone el código, no el modelo.** Aunque el prompt le pasa los
+datos, el modelo unas veces los escribía enteros, otras los resumía a "contacta
+con tu mediador" y otras se los saltaba para no pasarse del límite de frases.
+Como el dato es fijo y no depende de la conversación, `ensureMediadorContact()`
+lo impone después de generar la respuesta: sustituye las referencias genéricas
+por los datos reales, y en consultas de salud añade el cierre si el modelo lo
+omitió. Si los datos ya están completos, no toca nada.
+
 `escalationFallback` se define por marca en `config.js`, porque el destino
 depende del perfil: un empleado tiene un departamento de RRHH al que preguntar,
 pero un gestor de la plataforma no.
