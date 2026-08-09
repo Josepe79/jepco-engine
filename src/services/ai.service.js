@@ -142,7 +142,7 @@ ${safeAppUrl ? `URL de acceso a la aplicación: ${safeAppUrl}` : ''}
 ${mediadorContacto ? `Mediador de seguros de este cliente: ${mediadorContacto}` : ''}
 
 CONTEXTO DE ESTA CONSULTA:
-${category ? `El usuario pregunta por la sección "${category}". Lee toda su pregunta en ese contexto, aunque no lo mencione.` : 'El usuario no ha indicado sección: es una pregunta abierta.'}
+${category ? `El usuario pregunta por la sección "${category}". Lee toda su pregunta en ese contexto, aunque no lo mencione. Esto te dice de QUÉ habla, no lo que debes contestar: la respuesta sigue teniendo que salir de la INFORMACIÓN RECUPERADA.` : 'El usuario no ha indicado sección: es una pregunta abierta.'}
 ${provider && PROVIDER_LABELS[provider] ? `Su tarjeta la emite ${PROVIDER_LABELS[provider]}, así que la INFORMACIÓN RECUPERADA sobre ese emisor es la que le aplica.` : ''}
 
 INFORMACIÓN RECUPERADA (úsala si es relevante):

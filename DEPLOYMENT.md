@@ -466,7 +466,7 @@ NODE_ENV=development PORT=3999 RATE_LIMIT_MAX=300 node src/index.js
 node scratch/regression.js
 ```
 
-Comprueba 58 casos: que responda lo que sabe, que escale lo que no, que cada
+Comprueba 60 casos: que responda lo que sabe, que escale lo que no, que cada
 emisor dé sus propios datos y que no aparezcan invenciones concretas
 (`absent: ['cualquier sitio']`, `absent: ['cheque gourmet']`, `absent:
 ['931 110 086']` en respuestas de Pluxee).
@@ -480,16 +480,22 @@ casos y aflojaba otros, y sin medir el conjunto era imposible saber si un cambio
 mejoraba o empeoraba. Con la suite, una idea que suena razonable se descarta en
 cinco minutos si no mueve el número.
 
-Marca actual: **57/58**, estable en ejecuciones sucesivas.
+Marca actual: **57-58/60**, con un caso de variación entre ejecuciones.
 
-Los dos fallos que quedan son el mismo comportamiento: cuando falta el dato
-concreto que se pregunta, el modelo responde con lo genérico que sí tiene en vez
-de reconocer que no lo sabe, o al revés, escala teniendo algo aprovechable.
+Los fallos que quedan son sobre-escalados: escala teniendo algo aprovechable en
+el contexto. Molesto, pero inocuo — el usuario acaba preguntando a RRHH.
 
-Es poco útil, pero conviene ver qué **no** hace: no se inventa datos ni toma
-prestados los de otro emisor. Up Spain no publica teléfono en ninguna de sus
-páginas; preguntado por él, escala sin ofrecer el de Edenred ni el de Pluxee,
-que tiene en el mismo contexto. Todos los controles `absent` pasan.
+**Ese equilibrio se eligió a conciencia.** Una versión anterior del prompt
+acertaba dos casos más, y a cambio se inventaba cosas. Preguntada por el pago de
+guardería sin emisor conocido, con un contexto que no explica el mecanismo,
+respondía tres de cada cuatro veces que "el pago se realiza mediante deducción
+de nómina, lo que reduce tu base imponible". Nada de eso estaba en ningún
+fragmento. Suena plausible, va de fiscalidad, y es inventado.
+
+Escalar de más se nota y se corrige cargando contenido. Inventarse un mecanismo
+fiscal no se nota hasta que alguien actúa en consecuencia. Por eso hay casos de
+regresión **sin `expect`**, que no juzgan si responde o escala y solo vigilan que
+no aparezca lo que no debe.
 
 De los cuatro fallos que había al crear la suite, tres se resolvieron **sin
 tocar una línea de código**, solo cargando el contenido que faltaba.

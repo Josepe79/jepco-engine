@@ -8,6 +8,8 @@
  * Cada caso declara qué se espera:
  *   answer   debe responder con el dato
  *   escalate debe reconocer que no lo sabe
+ *   (sin expect) da igual si responde o escala; solo importan contains/absent.
+ *              Útil para vigilar invenciones donde ambas salidas son legítimas.
  *   contains la respuesta debe incluir estos textos (sin distinguir acentos)
  *   absent   la respuesta NO debe incluir estos textos (control de invenciones)
  *
@@ -230,6 +232,19 @@ const CASES = [
     q: '¿Puedo usarla en el AVE?',
     expect: 'answer', contains: ['ave'] },
 
+  // ── Invenciones ─────────────────────────────────────────────────────────
+  // Sin emisor, el contexto de guardería solo trae el fragmento genérico, que
+  // no explica el mecanismo de pago. Puede responder con lo que sí tiene (el
+  // código digital del simulador) o escalar; lo que no puede es inventarse una
+  // deducción en nómina que no aparece por ningún lado.
+  { id: 'inv-pago-nomina', brand: 'snfplus_usuario', cat: 'guarderia',
+    q: '¿cómo funciona el pago?',
+    absent: ['nómina', 'nomina', 'base imponible', 'salario bruto'] },
+  // Misma forma en comida: sin emisor no sabemos cómo se activa la tarjeta.
+  { id: 'inv-activacion-sin-emisor', brand: 'snfplus_usuario', cat: 'comida',
+    q: '¿cómo activo la tarjeta y con qué app?',
+    absent: ['myedenred', 'clientes.edenred.es', 'upone', '900 800 777'] },
+
   // ── Continuidad de la conversación ──────────────────────────────────────
   // Preguntas cortas que solo tienen sentido con el tema activo. El widget
   // arrastra la categoría del último botón pulsado; sin eso, estas se buscaban
@@ -278,6 +293,7 @@ async function run(c) {
   const escalated = d.status === 'escalated';
   if (c.expect === 'answer'   && escalated)  fails.push('escaló cuando debía responder');
   if (c.expect === 'escalate' && !escalated) fails.push('respondió cuando debía escalar');
+  // Sin `expect`, cualquiera de las dos salidas vale: solo se vigila el texto.
 
   (c.contains || []).forEach(t => {
     if (!n.includes(norm(t))) fails.push(`falta "${t}"`);
