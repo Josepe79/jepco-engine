@@ -74,6 +74,11 @@ module.exports = {
    * Cada marca es un asistente independiente: su propia personalidad y su propia
    * base de conocimiento en la tabla KnowledgeChunk, filtrada por brandId.
    * El widget selecciona la marca con el atributo `data-brand-id`.
+   *
+   * `escalationFallback` es a quién derivar cuando el bot no sabe la respuesta y
+   * la duda NO es de la póliza (esas van siempre al mediador). Depende del
+   * perfil: un empleado tiene un departamento de RRHH al que preguntar, pero un
+   * gestor de la plataforma no.
    */
   BRANDS: {
     saludflex: {
@@ -94,17 +99,20 @@ module.exports = {
     snfplus_usuario: {
       name: 'SNF+',
       personality: 'Asistente experto de SNF+ en Retribución Flexible. Profesional, eficiente y muy claro explicando conceptos fiscales y beneficios para empleados. Prioriza siempre la información del manual para resolver dudas sobre el plan de compensación.',
-      manual: 'Manual de SNF+ Usuario: Especialistas en soporte premium para retribución flexible y bienestar. Resolvemos dudas sobre el funcionamiento general de la compensación flexible.'
+      manual: 'Manual de SNF+ Usuario: Especialistas en soporte premium para retribución flexible y bienestar. Resolvemos dudas sobre el funcionamiento general de la compensación flexible.',
+      escalationFallback: 'el equipo de Recursos Humanos de tu empresa'
     },
     snfplus_rrhh: {
       name: 'SNF+ RRHH',
       personality: 'Asistente experto para equipos de Recursos Humanos que gestionan el plan de retribución flexible. Profesional, preciso y orientado a la gestión. Resuelve dudas sobre administración del plan a nivel empresa: altas y bajas de empleados, configuración de productos, reporting y cumplimiento normativo.',
-      manual: 'Manual de SNF+ RRHH: Guía para responsables de RRHH que administran el plan de retribución flexible en la plataforma SNF+.'
+      manual: 'Manual de SNF+ RRHH: Guía para responsables de RRHH que administran el plan de retribución flexible en la plataforma SNF+.',
+      escalationFallback: 'el soporte de SNF+'
     },
     snfplus_gestor: {
       name: 'SNF+ Gestor',
       personality: 'Asistente técnico para gestores y administradores de la plataforma SNF+. Preciso, técnico y eficiente. Resuelve dudas sobre configuración de cuentas de empresa, administración de la plataforma, gestión de accesos y operaciones avanzadas.',
-      manual: 'Manual de SNF+ Gestor: Guía técnica para gestores y administradores de la plataforma SNF+.'
+      manual: 'Manual de SNF+ Gestor: Guía técnica para gestores y administradores de la plataforma SNF+.',
+      escalationFallback: 'el soporte de SNF+'
     },
   }
 };

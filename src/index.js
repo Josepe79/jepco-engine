@@ -227,7 +227,8 @@ function registerRoutes() {
       },
     },
   }, async (request, reply) => {
-    const { brandId, userId, message, category, appUrl, mediador } = request.body || {};
+    const { brandId, userId, message, category,
+            appUrl, mediador, mediadorEmail, mediadorTel } = request.body || {};
 
     if (!brandId || !userId || !message) {
       return reply.status(400).send({ error: 'Missing required fields' });
@@ -244,7 +245,8 @@ function registerRoutes() {
 
     try {
       const result = await telegram.handleMessage(
-        brandId, 'WEB', userId, message, null, category, appUrl, mediador
+        brandId, 'WEB', userId, message, null,
+        { category, appUrl, mediador, mediadorEmail, mediadorTel }
       );
       return {
         reply:  result.text,

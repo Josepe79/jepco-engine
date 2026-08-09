@@ -8,7 +8,12 @@
         brandId:   (_script && _script.getAttribute('data-brand-id')) || 'snfplus_usuario',
         brandName: (_script && _script.getAttribute('data-env-label')) || 'SNF+',
         appUrl:    (_script && _script.getAttribute('data-app-url'))   || null,
-        mediador:  (_script && _script.getAttribute('data-mediador'))  || null,
+        // Datos de contacto del mediador de seguros. Son datos profesionales de
+        // una empresa, no datos personales del usuario: el bot los muestra para
+        // que sepa a quién dirigirse con dudas de póliza.
+        mediador:      (_script && _script.getAttribute('data-mediador'))       || null,
+        mediadorEmail: (_script && _script.getAttribute('data-mediador-email')) || null,
+        mediadorTel:   (_script && _script.getAttribute('data-mediador-tel'))   || null,
         baseUrl: (function() {
             if (_script && _script.getAttribute('data-api-url')) {
                 return _script.getAttribute('data-api-url').replace(/\/$/, '');
@@ -624,7 +629,9 @@
                     userId:   CONFIG.userId,
                     category: category || null,
                     appUrl:   CONFIG.appUrl  || null,
-                    mediador: CONFIG.mediador || null
+                    mediador:      CONFIG.mediador      || null,
+                    mediadorEmail: CONFIG.mediadorEmail || null,
+                    mediadorTel:   CONFIG.mediadorTel   || null
                 })
             });
 

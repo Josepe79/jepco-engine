@@ -37,15 +37,22 @@
 
     <!--
         Atributos disponibles:
-          data-api-url   → URL base del backend (auto-detectada si se omite)
-          data-app-url   → URL de la aplicación SNF+ de este entorno (muestra botón "Ir a la aplicación")
-          data-env-label → Nombre del entorno mostrado en el header del widget
+          data-api-url         → URL base del backend (auto-detectada si se omite)
+          data-brand-id        → Perfil del asistente (usuario / rrhh / gestor)
+          data-app-url         → URL de la aplicación en este entorno
+          data-env-label       → Nombre mostrado en la cabecera del widget
+          data-mediador        → Mediador de seguros de este cliente
+          data-mediador-email  → Su email de contacto
+          data-mediador-tel    → Su teléfono
     -->
     <script
         src="https://jepco-engine-production.up.railway.app/public/snfplus-widget.js"
         data-brand-id="snfplus_usuario"
         data-app-url="https://app.snfplus.com"
-        data-env-label="SNF+">
+        data-env-label="SNF+"
+        data-mediador="Correduría Ejemplo S.L."
+        data-mediador-email="consultas@ejemplo.es"
+        data-mediador-tel="+34 911 234 567">
     </script>
 </body>
 </html>

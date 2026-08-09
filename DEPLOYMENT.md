@@ -34,8 +34,8 @@ snfplus-widget.js  ──▶  Fastify (src/index.js)
 4. Si la categoría no devuelve nada, reintenta sin filtro de categoría
 5. Pasa esos fragmentos a Gemini como `systemInstruction` con la orden de
    responder **solo** con eso
-6. Si Gemini no encuentra la respuesta, devuelve `[ESCALAR_A_HUMANO]` y se
-   dispara un aviso por Telegram
+6. Si no encuentra la respuesta, deriva al mediador o al soporte según el caso,
+   marca el intercambio como escalado y dispara un aviso por Telegram (ver §8)
 
 ---
 
@@ -192,7 +192,9 @@ await fastify.listen();    // 3. escuchar
     data-brand-id="snfplus_usuario"
     data-env-label="SNF+"
     data-app-url="https://app.snfplus.com"
-    data-mediador="Nombre del mediador">
+    data-mediador="Correduría Ejemplo S.L."
+    data-mediador-email="consultas@ejemplo.es"
+    data-mediador-tel="+34 911 234 567">
 </script>
 ```
 
@@ -201,7 +203,9 @@ await fastify.listen();    // 3. escuchar
 | `data-brand-id` | `snfplus_usuario` | Perfil del asistente. Determina personalidad y base de conocimiento. |
 | `data-env-label` | `SNF+` | Nombre mostrado en la cabecera del widget. |
 | `data-app-url` | — | URL de la aplicación en ese entorno. La IA la usa para indicar dónde acceder. |
-| `data-mediador` | — | Mediador de seguros del cliente. La IA lo nombra al derivar consultas de póliza. |
+| `data-mediador` | — | Mediador de seguros del cliente. |
+| `data-mediador-email` | — | Su email de contacto. |
+| `data-mediador-tel` | — | Su teléfono. |
 | `data-api-url` | origen del script | Backend. Se deduce del `src`; solo hace falta si difieren. |
 
 **Un mismo fichero JS sirve para todos los entornos.** La configuración va en los
@@ -253,7 +257,53 @@ Al añadir una categoría nueva hay que darla de alta en `ALLOWED_CATEGORIES`
 
 ---
 
-## 8. Telemetría y mejora del bot
+## 8. Qué pasa cuando el bot no sabe
+
+El bot **nunca dice que ha avisado a nadie**. No sería cierto: no hay ningún
+canal de vuelta hacia un usuario web, así que prometer una llamada es una
+promesa que el sistema no puede cumplir.
+
+En su lugar da un destino concreto, según de qué trate la duda:
+
+| Tipo de duda | A dónde deriva |
+|---|---|
+| Coberturas, condiciones, exclusiones o trámites de la póliza | Al mediador, con nombre, teléfono y email |
+| Cualquier otra cosa | Al `escalationFallback` de esa marca |
+
+Los datos del mediador llegan por atributos del widget, así que cada empresa
+cliente configura el suyo al incrustarlo. **Mostrarlos no implica ninguna cesión
+de datos**: son datos de contacto profesional de una empresa, no datos
+personales del usuario.
+
+`escalationFallback` se define por marca en `config.js`, porque el destino
+depende del perfil: un empleado tiene un departamento de RRHH al que preguntar,
+pero un gestor de la plataforma no.
+
+### Enviar la consulta al mediador
+
+No se hace, y es deliberado. El mediador es un tercero independiente, no un
+encargado del tratamiento, así que remitirle la consulta de un empleado sería
+una **cesión a un tercero** y necesitaría base legal, transparencia y constar en
+el registro de tratamientos del responsable.
+
+Si en algún momento se quiere hacer, la forma limpia es que **lo dispare el
+usuario**: el bot ofrece enviarlo, pide el email, y solo entonces se remite. Así
+la acción es explícita e informada, va solo esa consulta, y de paso se resuelve
+el problema del contacto de vuelta.
+
+### Cómo se detecta un escalado
+
+No basta con la etiqueta `[ESCALAR_A_HUMANO]` del modelo: a veces responde que
+no sabe y la omite. Cuando eso ocurría, el escalado no se registraba — no salía
+en el panel ni avisaba por Telegram — y el fallo era invisible, porque al
+usuario le llegaba la respuesta correcta.
+
+Por eso se comprueba la etiqueta **y** el texto de la respuesta, cuya redacción
+exacta se impone desde el prompt.
+
+---
+
+## 9. Telemetría y mejora del bot
 
 ### Qué se registra
 
@@ -376,7 +426,7 @@ forma evidente.
 
 ---
 
-## 9. Protección de datos
+## 10. Protección de datos
 
 | Medida | Implementación |
 |---|---|
@@ -390,7 +440,7 @@ de privacidad y en su registro de actividades de tratamiento.
 
 ---
 
-## 10. Endpoints
+## 11. Endpoints
 
 ### Públicos
 
@@ -423,7 +473,7 @@ filtrar información por diferencias de tiempo de respuesta.
 
 ---
 
-## 11. Notas operativas
+## 12. Notas operativas
 
 **El widget no está versionado.** El cliente apunta directamente a
 `/public/snfplus-widget.js`, así que cualquier despliegue entra en su producción

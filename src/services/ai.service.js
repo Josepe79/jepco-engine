@@ -23,12 +23,30 @@ function stripMarkdown(text) {
 
 const genAI = new GoogleGenerativeAI(config.GEMINI_API_KEY, { apiVersion: 'v1' });
 
-async function getAIResponse(brandId, userMessage, history = [], category = null, appUrl = null, mediador = null) {
+/**
+ * @param {object} options  Contexto del entorno que incrusta el widget.
+ *   Va en objeto y no como parámetros sueltos porque ya son demasiados: cuando
+ *   eran posicionales, `category` acabó colándose en el hueco de `ctx` y la
+ *   categoría no llegaba nunca al RAG.
+ */
+async function getAIResponse(brandId, userMessage, history = [], options = {}) {
   const brand = config.BRANDS[brandId];
   if (!brand) throw new Error('Unknown brand');
 
-  const safeAppUrl   = sanitizeParam(appUrl, 200);
-  const safeMediador = sanitizeParam(mediador, 150);
+  const { category = null, appUrl = null,
+          mediador = null, mediadorEmail = null, mediadorTel = null } = options;
+
+  const safeAppUrl        = sanitizeParam(appUrl, 200);
+  const safeMediador      = sanitizeParam(mediador, 150);
+  const safeMediadorEmail = sanitizeParam(mediadorEmail, 120);
+  const safeMediadorTel   = sanitizeParam(mediadorTel, 40);
+
+  // Datos de contacto del mediador tal cual se los daremos al usuario.
+  // Son datos de contacto profesional de una empresa, no datos personales del
+  // usuario: mostrarlos no supone ninguna cesión.
+  const mediadorContacto = [safeMediador, safeMediadorTel, safeMediadorEmail]
+    .filter(Boolean).join(', ');
+  const mediadorRef = mediadorContacto || 'el mediador de tu póliza';
 
   // 1. Obtener contexto relevante de la base de conocimientos.
   //
@@ -68,21 +86,26 @@ async function getAIResponse(brandId, userMessage, history = [], category = null
 
   const systemInstruction = `Eres el asistente de ${brand.name}. ${brand.personality}
 Conocimiento base: ${brand.manual}
-${safeAppUrl   ? `URL de acceso a la aplicación: ${safeAppUrl}` : ''}
-${safeMediador ? `Mediador de seguros de este cliente: ${safeMediador}` : ''}
+${safeAppUrl ? `URL de acceso a la aplicación: ${safeAppUrl}` : ''}
+${mediadorContacto ? `Mediador de seguros de este cliente: ${mediadorContacto}` : ''}
 
 INFORMACIÓN RECUPERADA (úsala si es relevante):
 ${context || 'Sin información adicional.'}
 
 REGLAS DE RESPUESTA — síguelas siempre sin excepción:
-1. Máximo 2-3 frases cortas. Nunca más.
+1. Máximo 3 frases cortas. Nunca más.
 2. Lenguaje simple y directo, como si respondieras por WhatsApp.
 3. Sin asteriscos, sin negritas, sin guiones, sin listas, sin títulos. Solo texto plano.
 4. No repitas la pregunta ni pongas introducciones del tipo "¡Claro!", "Por supuesto", "Es un placer", etc. Ve directo a la respuesta.
 5. Responde ÚNICAMENTE con lo que esté en la INFORMACIÓN RECUPERADA. No uses conocimiento propio sobre seguros, fiscalidad, productos financieros ni legislación. Si la información no está en el contexto, escala.
-6. Si el usuario pregunta por coberturas, condiciones o exclusiones del seguro de salud, responde siempre que debe contactar con ${safeMediador ? `el mediador: ${safeMediador}` : 'el mediador de la póliza'}.
-7. Si la pregunta es legal o compleja y no está en el manual, responde exactamente: "[ESCALAR_A_HUMANO] No tengo esa información ahora mismo, pero he avisado a un agente para que te contacte."
-8. Si no estás seguro o la información no aparece en el contexto, responde exactamente: "[ESCALAR_A_HUMANO] No tengo esa información ahora mismo, pero he avisado a un agente para que te contacte."`;
+6. Si el usuario pregunta por coberturas, condiciones, exclusiones o trámites de la póliza de salud, indica siempre que eso lo resuelve su mediador y da sus datos tal cual: ${mediadorRef}.
+
+CUANDO NO SEPAS LA RESPUESTA:
+7. Nunca digas que has avisado a nadie, ni que alguien va a contactar al usuario. No es cierto y no puede cumplirse. Di simplemente que no tienes esa información y a quién puede dirigirse.
+8. Si no encuentras la respuesta en la INFORMACIÓN RECUPERADA, empieza obligatoriamente por "[ESCALAR_A_HUMANO]" y continúa así:
+   - Si la duda es del seguro o la póliza: "No tengo esa información. Esa consulta la resuelve tu mediador: ${mediadorRef}."
+   - En cualquier otro caso: "No tengo esa información. Consúltalo con ${brand.escalationFallback || 'el equipo de soporte'}."
+9. La etiqueta [ESCALAR_A_HUMANO] va una sola vez y siempre al principio. Nunca la expliques ni la menciones en el texto.`;
 
   const model = genAI.getGenerativeModel({
     model: 'gemini-2.5-flash-lite',
@@ -127,9 +150,19 @@ REGLAS DE RESPUESTA — síguelas siempre sin excepción:
     throw geminiError;
   }
 
-  const rawText = result.response.text();
-  const shouldEscalate = rawText.includes('[ESCALAR_A_HUMANO]');
+  const rawText   = result.response.text();
   const cleanText = stripMarkdown(rawText.replaceAll('[ESCALAR_A_HUMANO]', ''));
+
+  // El escalado no puede depender solo de que el modelo acuerde poner la
+  // etiqueta: a veces responde "No tengo esa información" y la omite. Cuando eso
+  // pasa el escalado se pierde — no sale en el panel ni avisa por Telegram — y
+  // el fallo es invisible, porque al usuario le llega la respuesta correcta.
+  //
+  // Por eso se comprueba también el texto, cuya redacción exacta imponemos
+  // desde el prompt.
+  const SIN_RESPUESTA = /^\s*no tengo esa informaci[óo]n/i;
+  const shouldEscalate = rawText.includes('[ESCALAR_A_HUMANO]')
+                      || SIN_RESPUESTA.test(cleanText);
 
   return {
     text: cleanText,

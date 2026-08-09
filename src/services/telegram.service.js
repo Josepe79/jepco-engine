@@ -53,8 +53,15 @@ async function recordInteraction(data) {
   }
 }
 
-async function handleMessage(brandId, platform, userId, text, ctx = null, category = null, appUrl = null, mediador = null) {
+/**
+ * @param {object|null} ctx      Contexto de Telegraf. Null en peticiones web.
+ * @param {object}      options  { category, appUrl, mediador, mediadorEmail, mediadorTel }
+ *   En objeto y no como parámetros sueltos: cuando eran posicionales, `category`
+ *   se coló en el hueco de `ctx` y dejó de llegar al RAG sin que nada fallara.
+ */
+async function handleMessage(brandId, platform, userId, text, ctx = null, options = {}) {
   const startedAt = Date.now();
+  const { category = null } = options;
   try {
     // 1. Get or create conversation
     let conversation = await db.conversation.findFirst({
@@ -77,7 +84,7 @@ async function handleMessage(brandId, platform, userId, text, ctx = null, catego
     history.push({ role: 'user', text, timestamp: new Date() });
 
     // 3. Get AI response
-    const aiResult = await ai.getAIResponse(brandId, text, history, category, appUrl, mediador);
+    const aiResult = await ai.getAIResponse(brandId, text, history, options);
 
     // 4. Update history with AI response
     history.push({ role: 'ai', text: aiResult.text, timestamp: new Date() });
