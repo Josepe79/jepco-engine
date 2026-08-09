@@ -81,10 +81,13 @@ const CASES = [
   { id: 'trans-sin-proveedor', brand: 'snfplus_usuario', cat: 'transporte',
     q: '¿Dónde puedo usar la tarjeta de transporte?',
     expect: 'escalate', absent: ['cualquier lugar', 'cualquier sitio', 'metro'] },
-  // Control anti-invención: up_one no tiene FAQs cargadas todavía
-  { id: 'trans-sin-faq-emisor', brand: 'snfplus_usuario', cat: 'transporte', prov: 'up_one',
-    q: '¿Dónde puedo usar la tarjeta de transporte?',
-    expect: 'escalate', absent: ['cualquier lugar', 'cualquier sitio', 'metro', 'renfe'] },
+  // Control anti-invención. Up Spain aún no tiene guardería cargada, y el
+  // nombre comercial solo puede salir de un fragmento de emisor: si responde,
+  // se lo ha inventado o lo ha tomado prestado de otro proveedor.
+  { id: 'gua-sin-faq-emisor', brand: 'snfplus_usuario', cat: 'guarderia', prov: 'up_spain',
+    q: '¿Cómo se llama el producto de guardería de mi proveedor?',
+    expect: 'escalate',
+    absent: ['cheque guardería', 'cheque guarderia', 'educainfantil', 'myedenred'] },
 
   // ── Comida por emisor ───────────────────────────────────────────────────
   { id: 'com-edenred-nombre', brand: 'snfplus_usuario', cat: 'comida', prov: 'edenred',
@@ -179,6 +182,17 @@ const CASES = [
   { id: 'trans-pluxee-caducidad', brand: 'snfplus_usuario', cat: 'transporte', prov: 'pluxee',
     q: '¿Caduca la tarjeta de transporte?',
     expect: 'answer', contains: ['48'] },
+
+  // ── Up Spain: transporte ────────────────────────────────────────────────
+  { id: 'trans-upspain-nombre', brand: 'snfplus_usuario', cat: 'transporte', prov: 'up_spain',
+    q: '¿Cómo se llama el producto de transporte?',
+    expect: 'answer', contains: ['up transporte'] },
+  { id: 'trans-upspain-donde', brand: 'snfplus_usuario', cat: 'transporte', prov: 'up_spain',
+    q: '¿Dónde puedo usar la tarjeta de transporte?',
+    expect: 'answer', contains: ['metro'], absent: ['931 110 086', '900 800 777'] },
+  { id: 'trans-upspain-ave', brand: 'snfplus_usuario', cat: 'transporte', prov: 'up_spain',
+    q: '¿Puedo usarla en el AVE?',
+    expect: 'answer', contains: ['ave'] },
 
   // ── RRHH y gestor ───────────────────────────────────────────────────────
   { id: 'rrhh-informes', brand: 'snfplus_rrhh', cat: 'informes',

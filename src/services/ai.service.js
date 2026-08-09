@@ -73,7 +73,6 @@ const PROVIDER_LABELS = {
   edenred:  'Edenred',
   pluxee:   'Pluxee',
   up_spain: 'Up Spain',
-  up_one:   'Up One',
 };
 
 /**

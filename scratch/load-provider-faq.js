@@ -180,13 +180,26 @@ const CHUNKS = [
     content: 'Cheque Gourmet de Up Spain: aplicación y saldo. La gestión se hace desde UpONE, que es la plataforma digital de Up Spain. Su aplicación está disponible en App Store y en Google Play, y desde ella se consultan el saldo y los movimientos de la tarjeta.',
   },
 
+  // ── Up Spain · Transporte ─────────────────────────────────────────────────
+  // Fuente: up-spain.com/cheque-transporte · redactado de nuevo
+  {
+    provider: 'up_spain',
+    category: 'transporte',
+    content: 'El producto de transporte de Up Spain se llama Up transporte. Dónde se usa: en autobús, tren, metro, tranvía, AVE o cualquier otro medio de transporte público colectivo, en toda España. Sirve tanto para billetes sueltos como para bonos.',
+  },
+  {
+    provider: 'up_spain',
+    category: 'transporte',
+    content: 'Up transporte: formato y forma de pago. Puede llevarse como tarjeta física contactless o directamente en el móvil, y es compatible con los principales servicios de pago por móvil. Up Spain dispone además de una aplicación propia de Up transporte para gestionarla.',
+  },
+  {
+    provider: 'up_spain',
+    category: 'transporte',
+    content: 'Up transporte: cómo se reparte el importe. El máximo exento son 136,36 € al mes durante un máximo de once mensualidades, lo que suma los 1.500 € anuales que permite la exención fiscal.',
+  },
+
   // ── Pendiente ─────────────────────────────────────────────────────────────
-  // up_spain × guarderia (Up Educainfantil) / transporte (Up Transporte)
-  // up_one — ver nota abajo
-  //
-  // Nota: UpONE es la plataforma digital de Up Spain, no un emisor distinto.
-  // Antes de cargar nada bajo `up_one` conviene confirmar si SNF+ lo distingue
-  // de verdad o si es el mismo proveedor con otro nombre.
+  // up_spain × guarderia (Up Educainfantil)
 ];
 
 async function main() {

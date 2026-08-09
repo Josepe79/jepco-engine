@@ -288,16 +288,14 @@ node scratch/load-provider-faq.js edenred    # solo uno
 |---|---|---|---|
 | Edenred | 5 | 4 | 4 |
 | Pluxee | 4 | 3 | 4 |
-| Up Spain | 2 | — | — |
-| Up One | ver nota | | |
+| Up Spain | 2 | — | 3 |
 
-**Sobre `up_one`:** UpONE es la plataforma digital de Up Spain, no un emisor
-distinto — así lo presenta su propia web. Antes de cargar nada bajo ese id
-conviene confirmar si SNF+ lo distingue de verdad o si es el mismo proveedor con
-otro nombre. Si son el mismo, sobra de `ALLOWED_PROVIDERS` y del widget.
+Falta Up Educainfantil, el producto de guardería de Up Spain.
 
-Nombres comerciales de Up Spain, para cuando toque cargar el resto:
-Cheque Gourmet (comida), Up Educainfantil (guardería), Up Transporte.
+**Hubo un cuarto emisor, `up_one`, que se retiró.** No era tal: venía de un
+cambio de productos de Up Spain, y UpONE es su plataforma digital. Se quitó de
+`ALLOWED_PROVIDERS`, del widget y de `PROVIDER_LABELS`. Nunca llegó a tener
+fragmentos ni interacciones asociadas.
 
 Al recopilar las FAQs de un emisor conviene revisar primero qué **no** cubre su
 web, y sobre todo distinguir qué es suyo y qué es normativa.
@@ -408,7 +406,7 @@ NODE_ENV=development PORT=3999 RATE_LIMIT_MAX=300 node src/index.js
 node scratch/regression.js
 ```
 
-Comprueba 43 casos: que responda lo que sabe, que escale lo que no, que cada
+Comprueba 46 casos: que responda lo que sabe, que escale lo que no, que cada
 emisor dé sus propios datos y que no aparezcan invenciones concretas
 (`absent: ['cualquier sitio']`, `absent: ['cheque gourmet']`, `absent:
 ['931 110 086']` en respuestas de Pluxee).
@@ -422,12 +420,18 @@ casos y aflojaba otros, y sin medir el conjunto era imposible saber si un cambio
 mejoraba o empeoraba. Con la suite, una idea que suena razonable se descarta en
 cinco minutos si no mueve el número.
 
-Marca actual: **40/43**. Los tres fallos restantes son respuestas poco útiles, no
-invenciones: cuando un emisor no tiene contenido operativo cargado, el modelo
-rellena con la parte fiscal en vez de reconocer que no lo sabe ("la tarjeta de
-transporte sirve para transporte"). Nada de lo que dice es falso, pero tampoco
-responde. Desaparecen solos según se cargan las FAQs que faltan — al completar
-Pluxee, dos de los cuatro anteriores se resolvieron sin tocar código.
+Marca actual: **43/46**. Los tres fallos que quedan son en realidad **el mismo
+comportamiento**: cuando falta el dato concreto que se pregunta, el modelo
+responde con lo genérico que sí tiene en vez de reconocer que no lo sabe.
+
+Es poco útil, pero conviene ver qué **no** hace: no se inventa datos ni toma
+prestados los de otro emisor. Preguntado por el nombre de la tarjeta de un
+emisor sin contenido cargado, describe la ventaja fiscal en general — nunca
+contesta "Cheque Gourmet" ni "Ticket Restaurant". Todos los controles `absent`
+pasan.
+
+Van desapareciendo según se carga contenido: al completar Pluxee, dos de los
+cuatro fallos anteriores se resolvieron sin tocar una línea de código.
 
 ### Cómo se detecta un escalado
 

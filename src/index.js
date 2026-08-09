@@ -60,7 +60,10 @@ const MAX_MESSAGE_LENGTH = 1000;
 // Emisores de tarjeta configurados. Solo afectan a Comida, Guardería y
 // Transporte: son quienes emiten la tarjeta y determinan dónde se usa, con qué
 // app y a quién se llama. La parte fiscal es igual con cualquiera de ellos.
-const ALLOWED_PROVIDERS = new Set(['edenred', 'pluxee', 'up_spain', 'up_one']);
+//
+// Hubo un cuarto, `up_one`, que resultó no ser un emisor: venía de un cambio de
+// productos de Up Spain, y UpONE es su plataforma digital.
+const ALLOWED_PROVIDERS = new Set(['edenred', 'pluxee', 'up_spain']);
 
 // ── CORS ───────────────────────────────────────────────────────────────────────
 

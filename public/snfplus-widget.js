@@ -12,7 +12,6 @@
         { id: 'edenred',  label: 'Edenred'  },
         { id: 'pluxee',   label: 'Pluxee'   },
         { id: 'up_spain', label: 'Up Spain' },
-        { id: 'up_one',   label: 'Up One'   },
     ];
     // Categorías cuya respuesta depende del emisor
     var PROVIDER_CATEGORIES = ['comida', 'guarderia', 'transporte'];
