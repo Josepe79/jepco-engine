@@ -57,12 +57,29 @@
                 return 'uid_' + Date.now().toString(36);
             }
         })(),
-        primaryColor:   '#0047AB',
-        secondaryColor: '#f4f7f9',
+        // Colores de marca. Cada cliente puede ajustarlos al incrustar el
+        // widget sin tocar este fichero; los valores por defecto son los de SNF+.
+        primaryColor:   (_script && _script.getAttribute('data-color'))       || '#0047AB',
+        secondaryColor: (_script && _script.getAttribute('data-color-fondo')) || '#f4f7f9',
     };
 
     CONFIG.apiUrl    = CONFIG.baseUrl + '/api/chat';
     CONFIG.deleteUrl = CONFIG.baseUrl + '/api/my-data/' + CONFIG.userId;
+
+    /**
+     * Color de texto legible sobre el color de marca.
+     *
+     * El widget escribía "white" a fuego encima del color primario. En cuanto
+     * ese color pasa a ser configurable eso deja de ser seguro: un cliente con
+     * una marca clara se encontraría los botones en blanco sobre blanco. Se
+     * decide por luminancia en vez de confiar en que elijan un color oscuro.
+     */
+    CONFIG.onPrimary = (function() {
+        var m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(CONFIG.primaryColor);
+        if (!m) return '#ffffff';
+        var r = parseInt(m[1], 16), g = parseInt(m[2], 16), b = parseInt(m[3], 16);
+        return (0.299 * r + 0.587 * g + 0.114 * b) > 150 ? '#10151C' : '#ffffff';
+    })();
 
     // El proveedor configurado por la aplicación manda siempre. El elegido a
     // mano solo se usa cuando no viene ninguno.
@@ -148,7 +165,7 @@
             transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         #jepco-chat-bubble:hover { transform: scale(1.1); }
-        #jepco-chat-bubble svg { width: 30px; height: 30px; fill: white; }
+        #jepco-chat-bubble svg { width: 30px; height: 30px; fill: ${CONFIG.onPrimary}; }
         #jepco-chat-window {
             width: min(380px, calc(100vw - 30px));
             height: min(600px, calc(100vh - 100px));
@@ -169,7 +186,7 @@
         }
         #jepco-chat-header {
             background: ${CONFIG.primaryColor};
-            color: white;
+            color: ${CONFIG.onPrimary};
             padding: 15px 20px;
             display: flex;
             align-items: center;
@@ -181,7 +198,7 @@
         #jepco-menu-btn {
             background: rgba(255,255,255,0.2);
             border: 1px solid rgba(255,255,255,0.4);
-            color: white;
+            color: ${CONFIG.onPrimary};
             padding: 5px 10px;
             border-radius: 8px;
             cursor: pointer;
@@ -217,7 +234,7 @@
         .jepco-msg-user {
             align-self: flex-end;
             background: ${CONFIG.primaryColor};
-            color: white;
+            color: ${CONFIG.onPrimary};
             border-bottom-right-radius: 2px;
         }
         .jepco-typing-indicator {
@@ -264,7 +281,7 @@
         #jepco-consent-accept {
             flex: 1;
             background: ${CONFIG.primaryColor};
-            color: white;
+            color: ${CONFIG.onPrimary};
             border: none;
             padding: 9px;
             border-radius: 8px;
@@ -301,7 +318,7 @@
         }
         #jepco-chat-send {
             background: ${CONFIG.primaryColor};
-            color: white;
+            color: ${CONFIG.onPrimary};
             border: none;
             width: 40px;
             height: 40px;
@@ -354,7 +371,7 @@
             text-align: left;
             transition: all 0.2s;
         }
-        .jepco-action-btn:hover { background: ${CONFIG.primaryColor}; color: white; }
+        .jepco-action-btn:hover { background: ${CONFIG.primaryColor}; color: ${CONFIG.onPrimary}; }
         .jepco-sub-btn {
             background: #fff;
             border: 1px solid #ddd;
@@ -365,7 +382,7 @@
             text-align: left;
             transition: all 0.2s;
         }
-        .jepco-sub-btn:hover { background: ${CONFIG.primaryColor}; color: white; border-color: ${CONFIG.primaryColor}; }
+        .jepco-sub-btn:hover { background: ${CONFIG.primaryColor}; color: ${CONFIG.onPrimary}; border-color: ${CONFIG.primaryColor}; }
         .jepco-back-btn { background: #eee !important; color: #333 !important; border-color: #ddd !important; }
         .jepco-back-btn:hover { background: #ddd !important; color: #333 !important; }
 

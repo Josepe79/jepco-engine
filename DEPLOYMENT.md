@@ -249,7 +249,16 @@ await fastify.listen();    // 3. escuchar
 | `data-mediador` | — | Mediador de seguros del cliente. |
 | `data-mediador-email` | — | Su email de contacto. |
 | `data-mediador-tel` | — | Su teléfono. |
+| `data-proveedor` | — | Emisor de la tarjeta: `edenred`, `pluxee` o `up_spain`. Ver §7. |
+| `data-color` | `#0047AB` | Color de marca. |
+| `data-color-fondo` | `#f4f7f9` | Fondo de la conversación. |
 | `data-api-url` | origen del script | Backend. Se deduce del `src`; solo hace falta si difieren. |
+
+**Sobre los colores:** el texto que va encima del color de marca no está fijado a
+blanco, se elige por luminancia. Un cliente con una marca clara —un amarillo, un
+verde pastel— obtiene texto oscuro en lugar de blanco sobre blanco. Antes de
+hacerlos configurables ese `white` estaba a fuego en ocho sitios y habría sido
+una llamada de soporte garantizada.
 
 **Un mismo fichero JS sirve para todos los entornos.** La configuración va en los
 atributos, así que quien incrusta el widget decide su entorno sin que haya que
