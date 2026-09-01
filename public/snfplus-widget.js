@@ -1,5 +1,16 @@
 (function() {
-    const _script = document.currentScript;
+    // `document.currentScript` es null si la web no incrusta la etiqueta tal cual:
+    // un framework que la inyecta, un bundler que la reempaqueta, o `async` en
+    // algunos navegadores. Sin él se pierden TODOS los data-* — incluida la URL
+    // del backend, que pasaría a ser relativa y apuntaría a la web del cliente.
+    // El fallback la busca por el nombre del fichero.
+    const _script = document.currentScript || (function() {
+        var tags = document.getElementsByTagName('script');
+        for (var i = tags.length - 1; i >= 0; i--) {
+            if (tags[i].src && tags[i].src.indexOf('snfplus-widget.js') !== -1) return tags[i];
+        }
+        return null;
+    })();
 
     const GDPR_KEY  = 'jepco_snfplus_consent';
     const UID_KEY   = 'jepco_snfplus_uid';
@@ -194,7 +205,20 @@
             flex-shrink: 0;
             gap: 10px;
         }
-        #jepco-chat-header h3 { margin: 0; font-size: 18px; font-weight: 600; flex: 1; }
+        /* El color se declara aquí y no solo en el contenedor: la herencia pierde
+           frente a CUALQUIER regla propia de la web anfitriona, así que su regla
+           para h3 teñía nuestra cabecera. Lo mismo con text-transform, que la
+           estaba poniendo en mayúsculas, y con font-family. */
+        #jepco-chat-header h3 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 600;
+            flex: 1;
+            color: ${CONFIG.onPrimary};
+            font-family: inherit;
+            text-transform: none;
+            letter-spacing: normal;
+        }
         #jepco-menu-btn {
             background: rgba(255,255,255,0.2);
             border: 1px solid rgba(255,255,255,0.4);
@@ -395,6 +419,7 @@
 
         /* ── Área de toque mínima para el botón cerrar ─────────────────────── */
         #jepco-close {
+            color: ${CONFIG.onPrimary};   /* declarado, no heredado — ver la nota del h3 */
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -817,14 +842,41 @@
                 })
             });
 
-            if (!response.ok) throw new Error('HTTP ' + response.status);
+            if (!response.ok) {
+                var httpError = new Error('HTTP ' + response.status);
+                httpError.status = response.status;
+                throw httpError;
+            }
 
             var data = await response.json();
             typingIndicator.style.display = 'none';
             addMessage(data.reply || 'Lo siento, no he podido procesar tu solicitud.', 'bot');
         } catch (error) {
             typingIndicator.style.display = 'none';
-            addMessage('Error de conexión con el servidor. Por favor, inténtalo de nuevo.', 'bot');
+
+            // Quien integra el widget necesita saber QUÉ ha fallado. Sin esto,
+            // un origen no autorizado, un CSP de la web anfitriona, un límite de
+            // peticiones y una caída del backend se ven todos igual, y no hay
+            // forma de distinguirlos sin leer el código.
+            console.error(
+                '[SNF+ widget] Ha fallado la llamada a ' + CONFIG.apiUrl +
+                (error.status ? ' (HTTP ' + error.status + ')'
+                              : ' — la petición no ha llegado a completarse. ' +
+                                'Causas habituales: el origen de esta web no está en ' +
+                                'CORS_ORIGINS del backend, o el CSP de esta web no ' +
+                                'permite connect-src hacia ese dominio.'),
+                error
+            );
+
+            var aviso;
+            if (error.status === 429) {
+                aviso = 'Has enviado muchos mensajes seguidos. Espera un momento e inténtalo de nuevo.';
+            } else if (error.status) {
+                aviso = 'El servidor ha devuelto un error (' + error.status + '). Inténtalo de nuevo en unos minutos.';
+            } else {
+                aviso = 'No he podido contactar con el servidor. Revisa tu conexión e inténtalo de nuevo.';
+            }
+            addMessage(aviso, 'bot');
         }
     }
 
