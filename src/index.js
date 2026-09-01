@@ -173,6 +173,22 @@ async function registerPlugins() {
   await fastify.register(fastifyStatic, {
     root:   path.join(__dirname, '../public'),
     prefix: '/public/',
+
+    // Helmet pone `Cross-Origin-Resource-Policy: same-origin` en todas las
+    // respuestas. Es un buen valor por defecto — impide que otras webs se
+    // cuelguen de nuestros recursos — pero /public/ existe precisamente para
+    // que se lo cuelguen: el navegador de la web del cliente descarga
+    // snfplus-widget.js desde nuestro dominio, y con `same-origin` lo bloquea.
+    //
+    // El error que ve el cliente menciona CORS, pero CORS no interviene aquí:
+    // un <script src> es una petición `no-cors`, así que ni la lista de
+    // CORS_ORIGINS ni las cabeceras Access-Control-* llegan a mirarse. Quien
+    // decide es CORP, y hay que relajarlo solo para los ficheros estáticos.
+    //
+    // /api/* mantiene `same-origin`: ahí sí manda CORS, y es quien filtra.
+    setHeaders: (res) => {
+      res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    },
   });
 
   await fastify.register(multipart, {
