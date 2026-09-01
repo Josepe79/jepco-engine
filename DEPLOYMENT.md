@@ -264,6 +264,45 @@ una llamada de soporte garantizada.
 atributos, así que quien incrusta el widget decide su entorno sin que haya que
 tocar el código.
 
+### Si el navegador bloquea el script
+
+> El recurso en `https://.../public/snfplus-widget.js` ha sido bloqueado debido a
+> su encabezado de política de recursos de origen cruzado (CORS) o la falta de éste.
+
+El mensaje dice CORS, pero el culpable es **CORP** — otra cabecera. Son dos
+controles distintos y se arreglan en sitios distintos:
+
+| | Qué protege | Quién decide |
+|---|---|---|
+| **CORP** | Que otra web cargue `snfplus-widget.js` | `Cross-Origin-Resource-Policy` sobre `/public/` |
+| **CORS** | Que otra web llame a `/api/chat` | La variable `CORS_ORIGINS` |
+
+Un `<script src>` es una petición `no-cors`: el navegador no manda cabecera
+`Origin` ni mira `Access-Control-*`, así que **añadir el dominio a `CORS_ORIGINS`
+no resuelve este error**. `/public/` se sirve con `cross-origin` desde
+`registerPlugins()` en `src/index.js`; si vuelve a aparecer, comprobar que sigue
+ahí el `setHeaders` del plugin de estáticos.
+
+Verificar sin abrir el navegador:
+
+```bash
+curl -sI https://TU-DOMINIO/public/snfplus-widget.js | grep -i cross-origin-resource
+# cross-origin-resource-policy: cross-origin   ← correcto
+# cross-origin-resource-policy: same-origin    ← el script quedará bloqueado
+```
+
+Una vez cargado el script, el siguiente fallo posible sí es CORS: el widget se
+pinta pero al enviar un mensaje responde con error. Eso es `/api/chat`
+devolviendo 403, y ahí sí toca `CORS_ORIGINS` (§4). Para comprobar si un dominio
+está autorizado:
+
+```bash
+curl -s -o /dev/null -w "%{http_code}
+" -X POST https://TU-DOMINIO/api/chat   -H "Origin: https://el-dominio-del-cliente.com"   -H "Content-Type: application/json" -d '{}'
+# 400 → el origen pasa el filtro (falla el cuerpo, que va vacío a propósito)
+# 403 → el origen no está en CORS_ORIGINS
+```
+
 ### Perfiles disponibles
 
 | `data-brand-id` | Para quién | Secciones del menú |
