@@ -27,6 +27,33 @@
     // Categorías cuya respuesta depende del emisor
     var PROVIDER_CATEGORIES = ['comida', 'guarderia', 'transporte'];
 
+    /**
+     * Traduce lo que venga en data-proveedor al identificador que espera la API.
+     *
+     * Quien incrusta el widget rellena este atributo por empresa, a menudo
+     * copiando el nombre comercial: 'Up Spain', 'UP SPAIN', 'Pluxee '. La API
+     * solo acepta 'edenred', 'pluxee' y 'up_spain', y respondía 400 a todo lo
+     * demás — con lo que un atributo OPCIONAL mal escrito tumbaba el chat
+     * entero, en todos los mensajes y sin decir por qué.
+     *
+     * Un valor irreconocible se descarta en vez de enviarse: el widget pregunta
+     * el emisor al usuario, que es el comportamiento que ya existe cuando no se
+     * informa el atributo. Degradar es preferible a romper.
+     */
+    function normalizarProveedor(valor) {
+        if (!valor) return null;
+        var limpio = String(valor).trim().toLowerCase().replace(/[\s-]+/g, '_');
+        for (var i = 0; i < PROVIDERS.length; i++) {
+            if (PROVIDERS[i].id === limpio) return PROVIDERS[i].id;
+        }
+        console.warn(
+            '[SNF+ widget] data-proveedor="' + valor + '" no es un emisor conocido. ' +
+            'Valores admitidos: ' + PROVIDERS.map(function(p) { return p.id; }).join(', ') +
+            '. Se ignora y se le preguntará al usuario.'
+        );
+        return null;
+    }
+
     const CONFIG = {
         brandId:   (_script && _script.getAttribute('data-brand-id')) || 'snfplus_usuario',
         brandName: (_script && _script.getAttribute('data-env-label')) || 'SNF+',
@@ -42,7 +69,7 @@
         // y se recuerda — pero preguntar es el plan B: el usuario a menudo no
         // distingue Up Spain de Up One, y responder con los datos del emisor
         // equivocado es peor que no responder.
-        proveedor: (_script && _script.getAttribute('data-proveedor')) || null,
+        proveedor: normalizarProveedor(_script && _script.getAttribute('data-proveedor')),
         baseUrl: (function() {
             if (_script && _script.getAttribute('data-api-url')) {
                 return _script.getAttribute('data-api-url').replace(/\/$/, '');

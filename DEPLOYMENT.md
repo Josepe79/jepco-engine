@@ -235,6 +235,7 @@ await fastify.listen();    // 3. escuchar
     data-brand-id="snfplus_usuario"
     data-env-label="SNF+"
     data-app-url="https://app.snfplus.com"
+    data-proveedor="up_spain"
     data-mediador="Correduría Ejemplo S.L."
     data-mediador-email="consultas@ejemplo.es"
     data-mediador-tel="+34 911 234 567">
@@ -249,7 +250,7 @@ await fastify.listen();    // 3. escuchar
 | `data-mediador` | — | Mediador de seguros del cliente. |
 | `data-mediador-email` | — | Su email de contacto. |
 | `data-mediador-tel` | — | Su teléfono. |
-| `data-proveedor` | — | Emisor de la tarjeta: `edenred`, `pluxee` o `up_spain`. Ver §7. |
+| `data-proveedor` | — | Emisor de la tarjeta. **El identificador, no el nombre comercial**: `edenred`, `pluxee` o `up_spain`. Ver §7. |
 | `data-color` | `#0047AB` | Color de marca. |
 | `data-color-fondo` | `#f4f7f9` | Fondo de la conversación. |
 | `data-api-url` | origen del script | Backend. Se deduce del `src`; solo hace falta si difieren. |
@@ -263,6 +264,13 @@ una llamada de soporte garantizada.
 **Un mismo fichero JS sirve para todos los entornos.** La configuración va en los
 atributos, así que quien incrusta el widget decide su entorno sin que haya que
 tocar el código.
+
+**`data-proveedor` va en minúsculas y con guion bajo.** La API rechaza cualquier
+otra cosa con un 400, así que un `"Up Spain"` en lugar de `up_spain` tumbaba
+todas las respuestas del chat. El widget ahora normaliza el valor —admite
+`Up Spain`, `UP SPAIN`, `up-spain`— y, si aun así no lo reconoce, lo descarta y
+le pregunta el emisor al usuario en vez de romper. Deja además un aviso en la
+consola diciendo qué valor recibió y cuáles admite.
 
 ### Si el navegador bloquea el script
 
