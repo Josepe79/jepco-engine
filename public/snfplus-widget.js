@@ -12,6 +12,13 @@
         return null;
     })();
 
+    // El aviso de que se está hablando con una IA es deliberadamente fijo: no hay
+    // ningún data-* que lo quite ni lo reescriba. El artículo 50.1 del
+    // Reglamento de IA obliga al PROVEEDOR del sistema —nosotros— a que las
+    // personas sepan que interactúan con una IA, así que no es una preferencia
+    // que pueda decidir quien incrusta el widget. La excepción de "resulta
+    // evidente por el contexto" no nos sirve: el bot deriva a una persona
+    // cuando no sabe responder, y desde fuera no se distingue quién contesta.
     const GDPR_KEY  = 'jepco_snfplus_consent';
     const UID_KEY   = 'jepco_snfplus_uid';
     const PROV_KEY  = 'jepco_snfplus_proveedor';
@@ -509,12 +516,13 @@
                 <span id="jepco-close" style="cursor:pointer;font-size:22px;line-height:1">&times;</span>
             </div>
             <div id="jepco-chat-messages">
-                <div class="jepco-msg jepco-msg-bot">Hola! Soy el asistente de ${CONFIG.brandName}. ¿En qué puedo ayudarte hoy?</div>
+                <div class="jepco-msg jepco-msg-bot">Hola, soy el asistente virtual de ${CONFIG.brandName}. Te responde una inteligencia artificial, no una persona. ¿En qué puedo ayudarte?</div>
                 <div class="jepco-typing-indicator" id="jepco-typing">El asistente está escribiendo...</div>
             </div>
             <div id="jepco-consent-panel">
-                <h4>Aviso de privacidad</h4>
-                <p>Este asistente guarda tus mensajes para darte un servicio personalizado. Los datos se conservan durante 90 días y puedes borrarlos en cualquier momento. Al continuar aceptas el tratamiento de tus conversaciones conforme al RGPD.</p>
+                <h4>Antes de empezar</h4>
+                <p><strong>Estás hablando con un sistema de inteligencia artificial, no con una persona.</strong> Si no sabe responderte, deriva tu consulta al equipo humano.</p>
+                <p>Guarda tus mensajes para darte un servicio personalizado. Los datos se conservan durante 90 días y puedes borrarlos en cualquier momento. Al continuar aceptas el tratamiento de tus conversaciones conforme al RGPD.</p>
                 <div class="jepco-consent-btns">
                     <button id="jepco-consent-accept">Aceptar y continuar</button>
                     <button id="jepco-consent-reject">No, gracias</button>
