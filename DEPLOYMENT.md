@@ -93,17 +93,36 @@ npx prisma db push
 
 # 3. Variables de entorno (ver §2)
 
-# 4. Cargar el conocimiento de cada perfil
-node scratch/load-snfplus-manual.js   # usuario
-node scratch/load-rrhh-manual.js      # RRHH
-node scratch/load-gestor-manual.js    # gestor
+# 4. Cargar el conocimiento. Los cinco pasos, y en este orden.
+node scratch/load-snfplus-manual.js   # manual del empleado
+node scratch/load-rrhh-manual.js      # manual de RRHH
+node scratch/load-gestor-manual.js    # manual del gestor
+node scratch/load-provider-faq.js     # FAQ por emisor: Edenred, Pluxee, Up Spain
+node scratch/update-chunk.js          # correcciones sobre los fragmentos genéricos
 
 # 5. Arrancar
 npm start
 ```
 
+**Los pasos 4 y 5 de la carga no son opcionales.** Sin `load-provider-faq.js` el
+bot no sabe nada de tarjetas concretas y responde "no tengo esa información" a
+casi todo lo de Comida, Guardería y Transporte. Sin `update-chunk.js` se pierden
+las correcciones de normativa —las once mensualidades, la exclusión de
+supermercados, la retirada de "Cheque Gourmet" del fragmento genérico— y el bot
+vuelve a dar respuestas que ya sabemos equivocadas. Ambos guiones llevan el
+contenido dentro, así que reproducen el estado bueno tal cual.
+
+`add-provider-column.js` y `create-interaction-table.js` NO hacen falta: fueron
+migraciones puntuales sobre una base que ya existía, y `prisma db push` ya crea
+la columna y la tabla.
+
 **Comprobación:** `GET /health` debe devolver `{"status":"ok"}`, y los logs de
-arranque deben mostrar la política de CORS y los límites activos.
+arranque deben mostrar la política de CORS y los límites activos. Para validar
+que el conocimiento ha quedado completo, y no solo que el servicio levanta:
+
+```bash
+node scratch/regression.js       # 60 casos sobre las tres marcas
+```
 
 ---
 
