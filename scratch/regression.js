@@ -41,6 +41,15 @@ const CASES = [
     expect: 'answer', contains: ['ahorro', 'comedor', 'salud'],
     absent: ['seguro de vida', 'alquiler de vivienda'] },
 
+  // ── Familiares ──────────────────────────────────────────────────────────
+  // Dar de alta al familiar y añadirlo a un producto ya contratado son dos
+  // cosas distintas. El manual solo traía la primera, así que a quien preguntaba
+  // por la segunda se le respondía con el paso previo. `contains` exige las dos
+  // mitades: el alta en Familiares y la solicitud desde Productos.
+  { id: 'fam-incluir-hijo', brand: 'snfplus_usuario', cat: 'familiares',
+    q: '¿Cómo añado a mi hijo al seguro de salud?',
+    expect: 'answer', contains: ['familiares', 'productos'] },
+
   // ── Salud: fiscalidad responde, coberturas derivan ──────────────────────
   { id: 'salud-limite', brand: 'snfplus_usuario', cat: 'salud', med: true,
     q: '¿Cuánto puedo destinar al seguro de salud al año?',

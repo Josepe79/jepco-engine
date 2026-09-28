@@ -48,6 +48,22 @@ const UPDATES = [
     category: 'comida',
     content: 'Saldo de la tarjeta de comida: el saldo no caduca. Lo que no gastes un mes se acumula para el siguiente, no se pierde. Si la tarjeta caduca, se pierde o se extravía, el saldo viaja automáticamente a la tarjeta nueva: caduca la tarjeta como soporte físico, nunca el dinero que tienes en ella.',
   },
+  {
+    // Este fragmento ya existía y viene de load-snfplus-manual.js. Se repite
+    // aquí porque el borrado de más abajo se lleva la categoría entera: en
+    // cuanto 'familiares' entra en esta lista, lo que no esté aquí se pierde.
+    category: 'familiares',
+    content: 'Para dar de alta a familiares (cónyuge o hijos), accede al apartado "Familiares" en el menú de la aplicación y completa la información requerida. Es un paso obligatorio antes de poder contratar el seguro de salud o la guardería.',
+  },
+  {
+    // Dar de alta al familiar y añadirlo a un producto son dos cosas distintas,
+    // y el manual solo cubría la primera: quien preguntaba cómo incluir a un
+    // hijo en el seguro ya contratado recibía las instrucciones del alta, que
+    // es un paso previo, no lo que estaba pidiendo.
+    // Fuente: respuesta de soporte validada por el equipo, 28-09-2026.
+    category: 'familiares',
+    content: 'Incluir a un familiar en un producto ya contratado, como el seguro de salud, requiere dos pasos. Primero, el familiar debe estar dado de alta en el apartado Familiares de la aplicación. Después, para incluirlo en el producto: 1) acceder al menú Productos y localizar el producto contratado; 2) hacer clic en el producto; 3) seleccionar el familiar previamente añadido en Familiares y pulsar solicitar la inclusión; 4) confirmar la inclusión. En el apartado Ayuda de la aplicación hay un vídeo manual que muestra el proceso.',
+  },
 ];
 
 async function main() {
