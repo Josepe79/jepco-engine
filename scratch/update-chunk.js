@@ -49,6 +49,19 @@ const UPDATES = [
     content: 'Saldo de la tarjeta de comida: el saldo no caduca. Lo que no gastes un mes se acumula para el siguiente, no se pierde. Si la tarjeta caduca, se pierde o se extravía, el saldo viaja automáticamente a la tarjeta nueva: caduca la tarjeta como soporte físico, nunca el dinero que tienes en ella.',
   },
   {
+    // Igual que familiares: este fragmento ya existía y se copia aquí porque al
+    // entrar 'salud' en la lista, el borrado de más abajo se lleva la categoría.
+    //
+    // Lo único nuevo es la frase de remisión a Productos. Hace falta porque el
+    // widget fija el tema al pulsar un botón y el texto libre lo hereda: quien
+    // viene de Salud y pregunta cómo incluir a su hijo tiene la búsqueda
+    // acotada a 'salud' y nunca ve el fragmento de 'familiares'. Se remite en
+    // vez de duplicar el procedimiento entero para no tener dos copias que
+    // mantener sincronizadas; el detalle paso a paso vive en 'familiares'.
+    category: 'salud',
+    content: 'Seguro de Salud: Es un contrato de póliza con duración de 12 meses. Requiere haber dado de alta a los familiares en el sistema previamente y disponer de una copia del DNI. Para incluir a un familiar en un seguro de salud ya contratado, además del alta en el apartado Familiares hay que solicitar la inclusión desde el menú Productos de la aplicación. El límite máximo de exención fiscal es de 500 € al año por persona (empleado, cónyuge e hijos de hasta 25 años incluidos). Si el empleado o algún familiar tiene reconocida una discapacidad, el límite sube a 1.500 € por persona. Para cualquier consulta sobre coberturas, condiciones o exclusiones de la póliza, hay que contactar directamente con el mediador.',
+  },
+  {
     // Este fragmento ya existía y viene de load-snfplus-manual.js. Se repite
     // aquí porque el borrado de más abajo se lleva la categoría entera: en
     // cuanto 'familiares' entra en esta lista, lo que no esté aquí se pierde.

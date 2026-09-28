@@ -49,6 +49,13 @@ const CASES = [
   { id: 'fam-incluir-hijo', brand: 'snfplus_usuario', cat: 'familiares',
     q: '¿Cómo añado a mi hijo al seguro de salud?',
     expect: 'answer', contains: ['familiares', 'productos'] },
+  // La misma pregunta llegando desde Salud, que es como llega de verdad: el
+  // widget fija el tema al pulsar el botón y el texto libre lo hereda. Con la
+  // búsqueda acotada a 'salud' no se ve el fragmento de 'familiares', así que
+  // este caso vigila la frase de remisión que se añadió al fragmento de salud.
+  { id: 'fam-incluir-hijo-desde-salud', brand: 'snfplus_usuario', cat: 'salud', med: true,
+    q: '¿Cómo añado a mi hijo al seguro de salud?',
+    expect: 'answer', contains: ['familiares', 'productos'] },
 
   // ── Salud: fiscalidad responde, coberturas derivan ──────────────────────
   { id: 'salud-limite', brand: 'snfplus_usuario', cat: 'salud', med: true,

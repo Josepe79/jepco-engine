@@ -541,7 +541,7 @@ NODE_ENV=development PORT=3999 RATE_LIMIT_MAX=300 node src/index.js
 node scratch/regression.js
 ```
 
-Comprueba 61 casos: que responda lo que sabe, que escale lo que no, que cada
+Comprueba 62 casos: que responda lo que sabe, que escale lo que no, que cada
 emisor dé sus propios datos y que no aparezcan invenciones concretas
 (`absent: ['cualquier sitio']`, `absent: ['cheque gourmet']`, `absent:
 ['931 110 086']` en respuestas de Pluxee).
@@ -555,7 +555,7 @@ casos y aflojaba otros, y sin medir el conjunto era imposible saber si un cambio
 mejoraba o empeoraba. Con la suite, una idea que suena razonable se descarta en
 cinco minutos si no mueve el número.
 
-Marca actual: **58/61**, con un caso de variación entre ejecuciones.
+Marca actual: **59/62**, con un caso de variación entre ejecuciones.
 
 Los fallos que quedan son sobre-escalados: escala teniendo algo aprovechable en
 el contexto. Molesto, pero inocuo — el usuario acaba preguntando a RRHH.
