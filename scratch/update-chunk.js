@@ -15,8 +15,40 @@ const BRAND_ID = 'snfplus_usuario';
 // que traía la web de Up Spain — no era un dato suyo, era esta misma norma.
 const UPDATES = [
   {
+    // Quién emite la tarjeta y desde dónde se pide son cosas distintas, y se
+    // estaban confundiendo: "a través de la aplicación" se leía como la app de
+    // Edenred o Pluxee, que es la que el empleado tiene en el móvil. Si la pide
+    // ahí, no llega nunca.
+    //
+    // El día de corte va deliberadamente rodeado de avisos. El chatbot es
+    // anónimo: no sabe de qué empresa es quien pregunta, así que no puede saber
+    // su día de corte. El 20 es un ejemplo y está redactado en condicional para
+    // que no lo devuelva como si fuera el dato del usuario.
+    //
+    // El texto se repite en comida y en transporte porque la búsqueda va
+    // acotada por categoría: sin las dos copias, solo respondería una de ellas.
+    category: 'comida',
+    content: 'Solicitud de la tarjeta física de comida o transporte: se solicita desde la aplicación de SNF+, no desde la app del emisor. Cada empresa fija en su plan de productos (comida, guardería y transporte) un día de corte mensual: ese día varía de una empresa a otra y este asistente no lo conoce, hay que consultarlo en el plan de productos de la propia empresa. SNF+ comunica al emisor las solicitudes el día siguiente al día de corte del mes anterior al de la primera recarga. A modo de ejemplo, si el día de corte fuera el 20, una solicitud para la primera recarga de noviembre se comunicaría el 21 de octubre. Si el empleado no ha solicitado la tarjeta en la aplicación de SNF+, no la recibirá. Una vez emitida, la tarjeta se gestiona con su emisor: consulta la información específica de tu emisor para saldo, movimientos, activación, bloqueo e incidencias.',
+  },
+  {
+    // Quién emite la tarjeta y desde dónde se pide son cosas distintas, y se
+    // estaban confundiendo: "a través de la aplicación" se leía como la app de
+    // Edenred o Pluxee, que es la que el empleado tiene en el móvil. Si la pide
+    // ahí, no llega nunca.
+    //
+    // El día de corte va deliberadamente rodeado de avisos. El chatbot es
+    // anónimo: no sabe de qué empresa es quien pregunta, así que no puede saber
+    // su día de corte. El 20 es un ejemplo y está redactado en condicional para
+    // que no lo devuelva como si fuera el dato del usuario.
+    //
+    // El texto se repite en comida y en transporte porque la búsqueda va
+    // acotada por categoría: sin las dos copias, solo respondería una de ellas.
     category: 'transporte',
-    content: 'Tarjeta Transporte: El límite mensual es de 136,36 €, sin superar los 1.500 € anuales. Como el resto de productos, solo se puede usar once meses al año: por defecto agosto está cerrado y no permite solicitar cantidad. Requiere solicitar la tarjeta física la primera vez, activarla en el móvil y se recarga el día uno de cada mes. Esta ventaja fiscal no se aplica en los territorios forales del País Vasco, es decir en Álava, Vizcaya y Guipúzcoa.',
+    content: 'Solicitud de la tarjeta física de comida o transporte: se solicita desde la aplicación de SNF+, no desde la app del emisor. Cada empresa fija en su plan de productos (comida, guardería y transporte) un día de corte mensual: ese día varía de una empresa a otra y este asistente no lo conoce, hay que consultarlo en el plan de productos de la propia empresa. SNF+ comunica al emisor las solicitudes el día siguiente al día de corte del mes anterior al de la primera recarga. A modo de ejemplo, si el día de corte fuera el 20, una solicitud para la primera recarga de noviembre se comunicaría el 21 de octubre. Si el empleado no ha solicitado la tarjeta en la aplicación de SNF+, no la recibirá. Una vez emitida, la tarjeta se gestiona con su emisor: consulta la información específica de tu emisor para saldo, movimientos, activación, bloqueo e incidencias.',
+  },
+  {
+    category: 'transporte',
+    content: 'Tarjeta Transporte: El límite mensual es de 136,36 €, sin superar los 1.500 € anuales. Como el resto de productos, solo se puede usar once meses al año: por defecto agosto está cerrado y no permite solicitar cantidad. Requiere solicitar la tarjeta física la primera vez desde la aplicación de SNF+ (no desde la app del emisor), activarla en el móvil y se recarga el día uno de cada mes. Esta ventaja fiscal no se aplica en los territorios forales del País Vasco, es decir en Álava, Vizcaya y Guipúzcoa.',
   },
   {
     // La edad la aporta la web de Pluxee, pero no es un dato suyo: el primer
@@ -39,7 +71,7 @@ const UPDATES = [
     //    restauración. Al ser normativa va aquí, y así la responde también a
     //    usuarios de emisores cuya web no la menciona.
     category: 'comida',
-    content: 'Tarjeta Comida: Permite destinar hasta 11 € por día trabajado, con un máximo de 20 días al mes. Solo se puede usar en establecimientos de restauración, porque la exención del IRPF no ampara la compra en supermercados ni alimentación para llevar a casa. Como el resto de productos, solo se puede usar once meses al año: por defecto agosto está cerrado y no permite solicitar cantidad. Si es la primera vez, el empleado debe solicitar la tarjeta física a través de la aplicación, activarla desde el móvil y se recarga el día uno de cada mes. El importe concreto lo decide cada empresa dentro de ese máximo legal.',
+    content: 'Tarjeta Comida: Permite destinar hasta 11 € por día trabajado, con un máximo de 20 días al mes. Solo se puede usar en establecimientos de restauración, porque la exención del IRPF no ampara la compra en supermercados ni alimentación para llevar a casa. Como el resto de productos, solo se puede usar once meses al año: por defecto agosto está cerrado y no permite solicitar cantidad. Si es la primera vez, el empleado debe solicitar la tarjeta física a través de la aplicación de SNF+ (no desde la app del emisor), activarla desde el móvil y se recarga el día uno de cada mes. El importe concreto lo decide cada empresa dentro de ese máximo legal.',
   },
   {
     // El saldo y la tarjeta son cosas distintas y conviene que el bot no las

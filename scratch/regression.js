@@ -248,6 +248,23 @@ const CASES = [
     q: '¿Puedo usarla en el AVE?',
     expect: 'answer', contains: ['ave'] },
 
+  // ── Solicitud de la tarjeta física ─────────────────────────────
+  // Se pide en la aplicación de SNF+, no en la del emisor. El empleado tiene las
+  // dos en el móvil, así que equivocarse es fácil y la consecuencia es que la
+  // tarjeta no llega nunca.
+  { id: 'sol-tarjeta-comida', brand: 'snfplus_usuario', cat: 'comida',
+    q: '¿Dónde solicito la tarjeta física de comida?',
+    expect: 'answer', contains: ['snf'] },
+  { id: 'sol-tarjeta-transporte', brand: 'snfplus_usuario', cat: 'transporte',
+    q: '¿Dónde solicito la tarjeta física de transporte?',
+    expect: 'answer', contains: ['snf'] },
+  // El caso real: ya la ha pedido donde no era. Tiene que decirle que así no
+  // llega, no limitarse a describir el procedimiento correcto.
+  { id: 'sol-tarjeta-app-emisor', brand: 'snfplus_usuario', cat: 'comida',
+    q: 'He pedido la tarjeta en la app de Edenred, ¿la recibiré?',
+    expect: 'answer', contains: ['snf'] },
+
+
   // ── Invenciones ─────────────────────────────────────────────────────────
   // Sin emisor, el contexto de guardería solo trae el fragmento genérico, que
   // no explica el mecanismo de pago. Puede responder con lo que sí tiene (el
@@ -260,6 +277,12 @@ const CASES = [
   { id: 'inv-activacion-sin-emisor', brand: 'snfplus_usuario', cat: 'comida',
     q: '¿cómo activo la tarjeta y con qué app?',
     absent: ['myedenred', 'clientes.edenred.es', 'upone', '900 800 777'] },
+  // El día de corte lo fija cada empresa y el chatbot es anónimo: no sabe de
+  // quién es quien pregunta. El 20 aparece en el fragmento como ejemplo en
+  // condicional, y aquí se vigila que no lo devuelva como si fuera SU día.
+  { id: 'inv-dia-corte', brand: 'snfplus_usuario', cat: 'comida',
+    q: '¿Qué día de corte tiene mi empresa?',
+    absent: ['20'] },
 
   // ── Continuidad de la conversación ──────────────────────────────────────
   // Preguntas cortas que solo tienen sentido con el tema activo. El widget
