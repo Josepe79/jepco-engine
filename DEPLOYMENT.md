@@ -545,7 +545,8 @@ el problema del contacto de vuelta.
 ```bash
 # Con el servidor levantado y sin límite de peticiones estorbando:
 NODE_ENV=development PORT=3999 RATE_LIMIT_MAX=300 node src/index.js
-node scratch/regression.js
+node scratch/regression.js           # 3 rondas por caso
+node scratch/regression.js --reps 1  # una ronda: rápido, no comparable
 ```
 
 Comprueba 70 casos: que responda lo que sabe, que escale lo que no, que cada
@@ -562,7 +563,21 @@ casos y aflojaba otros, y sin medir el conjunto era imposible saber si un cambio
 mejoraba o empeoraba. Con la suite, una idea que suena razonable se descarta en
 cinco minutos si no mueve el número.
 
-Marca actual: **65-66/70**. La variación entre ejecuciones es real y se ha medido: dos pasadas seguidas no dan la misma lista de fallos.
+**Cada caso se ejecuta 3 veces.** El modelo no es determinista ni a temperature
+0.2, y con una sola ronda dos pasadas seguidas daban listas de fallos distintas:
+una mejora de dos casos era indistinguible del ruido, así que no se podía evaluar
+ningún cambio. El resultado se reparte en tres grupos:
+
+| | Significa |
+|---|---|
+| **estable** | 3 de 3. Funciona. |
+| **inestable** | 1 o 2 de 3. No sabemos si funciona — no es medio acierto. |
+| **falla siempre** | 0 de 3. Roto de forma reproducible. |
+
+Marca actual: **66 estables · 1 inestable · 3 fallan siempre**, sobre 70 casos.
+
+Para afinar un caso concreto, `--reps 6` distingue mucho mejor un fallo real de
+una casualidad.
 
 Los fallos que quedan son sobre-escalados: escala teniendo algo aprovechable en
 el contexto. Molesto, pero inocuo — el usuario acaba preguntando a RRHH.

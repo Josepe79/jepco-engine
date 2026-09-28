@@ -134,7 +134,32 @@ async function getAIResponse(brandId, userMessage, history = [], options = {}) {
     }
 
     if (similarChunks.length > 0) {
-      context = similarChunks.map(c => c.content).join('\n---\n');
+      // El contexto se agrupa por origen en vez de pegarse todo seguido.
+      //
+      // Al modelo ya se le decía "quédate con lo de tu emisor", pero recibía los
+      // fragmentos indistinguibles, así que no tenía forma de saber cuáles eran.
+      // Con 2 genéricos y 5 de emisor acertaba por proximidad; al llegar al
+      // tercer genérico empezó a escalar teniendo la respuesta delante: el
+      // teléfono de Edenred estaba en el contexto, en primera posición.
+      const genericos = similarChunks.filter(c => !c.provider);
+      const delEmisor = similarChunks.filter(c => c.provider);
+
+      if (delEmisor.length === 0) {
+        // Sin fragmentos de emisor no hay nada que distinguir, y encabezar los
+        // genéricos con "valen con cualquier emisor" resultó activamente dañino:
+        // da sensación de cobertura completa y el bot pasó a inventarse el
+        // mecanismo de pago de guardería en 6 de 6 ejecuciones. Se agrupa solo
+        // cuando agrupar informa de algo.
+        context = similarChunks.map(c => c.content).join('\n---\n');
+      } else {
+        const etiqueta = PROVIDER_LABELS[provider] || 'SU EMISOR';
+        context = [
+          'PARÁMETROS GENERALES (valen con cualquier emisor):\n' +
+            genericos.map(c => '· ' + c.content).join('\n'),
+          `DATOS DE ${etiqueta.toUpperCase()}, que es quien emite su tarjeta:\n` +
+            delEmisor.map(c => '· ' + c.content).join('\n'),
+        ].filter(b => b.trim().endsWith(':') === false).join('\n\n');
+      }
       retrieval.chunksFound   = similarChunks.length;
       retrieval.chunkIds      = similarChunks.map(c => c.id);
       // La similitud viene del propio pgvector: 1 - distancia coseno
@@ -151,7 +176,7 @@ ${mediadorContacto ? `Mediador de seguros de este cliente: ${mediadorContacto}` 
 
 CONTEXTO DE ESTA CONSULTA:
 ${category ? `El usuario pregunta por la sección "${category}". Lee toda su pregunta en ese contexto, aunque no lo mencione. Esto te dice de QUÉ habla, no lo que debes contestar: la respuesta sigue teniendo que salir de la INFORMACIÓN RECUPERADA.` : 'El usuario no ha indicado sección: es una pregunta abierta.'}
-${provider && PROVIDER_LABELS[provider] ? `Su tarjeta la emite ${PROVIDER_LABELS[provider]}, así que la INFORMACIÓN RECUPERADA sobre ese emisor es la que le aplica.` : ''}
+${provider && PROVIDER_LABELS[provider] ? `Su tarjeta la emite ${PROVIDER_LABELS[provider]}. La INFORMACIÓN RECUPERADA viene en dos bloques: los PARÁMETROS GENERALES valen con cualquier emisor, y los DATOS DE ${PROVIDER_LABELS[provider].toUpperCase()} son los de su tarjeta concreta. Si pregunta por su tarjeta —dónde se usa, cómo se activa, a quién llamar, qué app, qué hacer si la pierde— la respuesta suele estar en el bloque de su emisor: mírala ahí antes de decir que no la tienes.` : ''}
 
 INFORMACIÓN RECUPERADA (úsala si es relevante):
 ${context || 'Sin información adicional.'}

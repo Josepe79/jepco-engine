@@ -19,6 +19,11 @@
  *   node scratch/regression.js                  contra localhost:3999
  *   node scratch/regression.js --url https://…  contra otro entorno
  *   node scratch/regression.js --grep salud     solo los casos que coincidan
+ *   node scratch/regression.js --reps 1         una sola ronda (rápido, no comparable)
+ *
+ * Cada caso se ejecuta 3 veces y se clasifica en estable / inestable / falla
+ * siempre. Un caso inestable no cuenta como medio acierto: cuenta como algo que
+ * no sabemos si funciona.
  */
 require('dotenv').config();
 
@@ -29,6 +34,9 @@ const argVal = (name, def) => {
 };
 const BASE = argVal('--url', 'http://127.0.0.1:3999').replace(/\/$/, '');
 const GREP = argVal('--grep', null);
+// Repeticiones por caso. 3 distingue estable de inestable sin disparar el coste;
+// con 1 el resultado no es reproducible y no sirve para comparar cambios.
+const REPS = parseInt(argVal('--reps', '3'), 10);
 
 const MED = {
   mediador:      'Correduría Ejemplo S.L.',
@@ -374,27 +382,55 @@ async function run(c) {
 
 (async () => {
   const lote = GREP ? CASES.filter(c => c.id.includes(GREP)) : CASES;
-  console.log(`\nRegresión · ${lote.length} casos · ${BASE}\n${'─'.repeat(74)}`);
+  console.log(`
+Regresión · ${lote.length} casos × ${REPS} · ${BASE}
+${'─'.repeat(74)}`);
 
+  // Cada caso se ejecuta varias veces porque el modelo no es determinista ni
+  // siquiera a temperature 0.2: dos pasadas seguidas daban listas de fallos
+  // distintas, y con esa variación una mejora de dos casos era indistinguible
+  // del ruido. Sin esto, evaluar un cambio era fe, no medida.
   const results = [];
   for (const c of lote) {
-    const r = await run(c);
-    results.push(r);
-    const mark = r.fails.length ? 'FALLA' : '  ok ';
-    console.log(`${mark}  ${r.id.padEnd(24)} ${r.fails.join(' · ')}`);
+    const rondas = [];
+    for (let i = 0; i < REPS; i++) rondas.push(await run(c));
+
+    const ok    = rondas.filter(r => r.fails.length === 0).length;
+    const estado = ok === REPS ? 'ok'
+                 : ok === 0    ? 'FALLA'
+                 : 'INEST';
+    results.push({ ...c, estado, ok, rondas });
+
+    const marca = { ok: '  ok  ', FALLA: ' FALLA', INEST: ' INEST' }[estado];
+    const tasa  = estado === 'ok' ? '' : `${ok}/${REPS}`;
+    const motivo = rondas.find(r => r.fails.length)?.fails.join(' · ') || '';
+    console.log(`${marca}  ${c.id.padEnd(28)} ${tasa.padEnd(5)} ${motivo}`);
   }
 
-  const bad = results.filter(r => r.fails.length);
-  if (bad.length) {
-    console.log(`\n${'─'.repeat(74)}\nDetalle de los fallos:\n`);
-    bad.forEach(r => {
-      console.log(`  [${r.id}]  ${r.q}`);
-      console.log(`     → ${r.reply}`);
-      console.log(`     ✗ ${r.fails.join(' · ')}\n`);
+  const rojos   = results.filter(r => r.estado === 'FALLA');
+  const inests  = results.filter(r => r.estado === 'INEST');
+
+  if (rojos.length || inests.length) {
+    console.log(`
+${'─'.repeat(74)}
+Detalle:
+`);
+    [...rojos, ...inests].forEach(r => {
+      const peor = r.rondas.find(x => x.fails.length);
+      console.log(`  [${r.id}]  ${r.estado === 'INEST' ? `inestable ${r.ok}/${REPS}` : 'falla siempre'}`);
+      console.log(`  ${r.q}`);
+      console.log(`     → ${peor.reply}`);
+      console.log(`     ✗ ${peor.fails.join(' · ')}
+`);
     });
   }
 
+  // Se informan por separado a propósito. Un caso inestable no es medio fallo:
+  // es un caso que no sabemos si funciona, y arreglar eso es otro trabajo que
+  // arreglar uno que falla siempre.
+  const verdes = results.length - rojos.length - inests.length;
   console.log(`${'─'.repeat(74)}`);
-  console.log(`${lote.length - bad.length}/${lote.length} correctos\n`);
-  process.exit(bad.length ? 1 : 0);
+  console.log(`${verdes}/${results.length} estables  ·  ${inests.length} inestables  ·  ${rojos.length} fallan siempre
+`);
+  process.exit(rojos.length ? 1 : 0);
 })();
