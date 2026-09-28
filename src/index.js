@@ -74,6 +74,12 @@ const MAX_MESSAGE_LENGTH = 1000;
 // productos de Up Spain, y UpONE es su plataforma digital.
 const ALLOWED_PROVIDERS = new Set(['edenred', 'pluxee', 'up_spain']);
 
+// Quién gestiona las solicitudes que pasan por la aseguradora (salud y ahorro).
+// Lo fija cada cliente: AXA lo lleva por soporte de SNF+; BMS, Globalfinanz y
+// GM Integra/Securex, por el mediador de la póliza. Sin este dato el asistente
+// deriva como siempre, a RRHH.
+const ALLOWED_GESTION = new Set(['mediador', 'soporte']);
+
 // ── CORS ───────────────────────────────────────────────────────────────────────
 
 /**
@@ -261,7 +267,8 @@ function registerRoutes() {
     },
   }, async (request, reply) => {
     const { brandId, userId, message, category, provider,
-            appUrl, mediador, mediadorEmail, mediadorTel } = request.body || {};
+            appUrl, mediador, mediadorEmail, mediadorTel,
+            gestionAseguradora } = request.body || {};
 
     if (!brandId || !userId || !message) {
       return reply.status(400).send({ error: 'Missing required fields' });
@@ -278,11 +285,15 @@ function registerRoutes() {
     if (provider && !ALLOWED_PROVIDERS.has(provider)) {
       return reply.status(400).send({ error: 'Invalid provider' });
     }
+    if (gestionAseguradora && !ALLOWED_GESTION.has(gestionAseguradora)) {
+      return reply.status(400).send({ error: 'Invalid gestionAseguradora' });
+    }
 
     try {
       const result = await telegram.handleMessage(
         brandId, 'WEB', userId, message, null,
-        { category, provider, appUrl, mediador, mediadorEmail, mediadorTel }
+        { category, provider, appUrl, mediador, mediadorEmail, mediadorTel,
+          gestionAseguradora }
       );
       return {
         reply:  result.text,

@@ -272,6 +272,7 @@ await fastify.listen();    // 3. escuchar
 | `data-proveedor` | — | Emisor de la tarjeta. **El identificador, no el nombre comercial**: `edenred`, `pluxee` o `up_spain`. Ver §7. |
 | `data-color` | `#0047AB` | Color de marca. |
 | `data-color-fondo` | `#f4f7f9` | Fondo de la conversación. |
+| `data-gestion-aseguradora` | — | Quién lleva el estado de las solicitudes de salud y ahorro: `mediador` o `soporte`. Sin este dato se deriva a RRHH, como el resto. |
 | `data-api-url` | origen del script | Backend. Se deduce del `src`; solo hace falta si difieren. |
 
 **Sobre los colores:** el texto que va encima del color de marca no está fijado a
@@ -283,6 +284,12 @@ una llamada de soporte garantizada.
 **Un mismo fichero JS sirve para todos los entornos.** La configuración va en los
 atributos, así que quien incrusta el widget decide su entorno sin que haya que
 tocar el código.
+
+**Quién aprueba qué.** Comida, guardería y transporte se aprueban solas. Salud y
+ahorro pasan por la aseguradora, y quién lleva su estado depende del cliente: AXA
+lo resuelve por el soporte de SNF+; BMS, Globalfinanz y GM Integra/Securex, por el
+mediador de la póliza. Eso es lo que declara `data-gestion-aseguradora`, y sin él
+el asistente deriva esas consultas a RRHH, que no las lleva.
 
 **`data-proveedor` va en minúsculas y con guion bajo.** La API rechaza cualquier
 otra cosa con un 400, así que un `"Up Spain"` en lugar de `up_spain` tumbaba
@@ -541,7 +548,7 @@ NODE_ENV=development PORT=3999 RATE_LIMIT_MAX=300 node src/index.js
 node scratch/regression.js
 ```
 
-Comprueba 66 casos: que responda lo que sabe, que escale lo que no, que cada
+Comprueba 70 casos: que responda lo que sabe, que escale lo que no, que cada
 emisor dé sus propios datos y que no aparezcan invenciones concretas
 (`absent: ['cualquier sitio']`, `absent: ['cheque gourmet']`, `absent:
 ['931 110 086']` en respuestas de Pluxee).
@@ -555,7 +562,7 @@ casos y aflojaba otros, y sin medir el conjunto era imposible saber si un cambio
 mejoraba o empeoraba. Con la suite, una idea que suena razonable se descarta en
 cinco minutos si no mueve el número.
 
-Marca actual: **65/66**, con un caso de variación entre ejecuciones.
+Marca actual: **65-66/70**. La variación entre ejecuciones es real y se ha medido: dos pasadas seguidas no dan la misma lista de fallos.
 
 Los fallos que quedan son sobre-escalados: escala teniendo algo aprovechable en
 el contexto. Molesto, pero inocuo — el usuario acaba preguntando a RRHH.

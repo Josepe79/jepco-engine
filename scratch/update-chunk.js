@@ -15,6 +15,19 @@ const BRAND_ID = 'snfplus_usuario';
 // que traía la web de Up Spain — no era un dato suyo, era esta misma norma.
 const UPDATES = [
   {
+    // Ya existía y viene de load-snfplus-manual.js. Se copia aquí porque al
+    // entrar 'productos_general' en la lista, el borrado se lleva la categoría.
+    category: 'productos_general',
+    content: 'El catálogo de servicios muestra los productos disponibles. Cada uno cuenta con un documento PDF informativo que se debe leer previamente y un simulador. En el simulador, el empleado puede ver su situación actual, hacer estimaciones de ahorro, guardar la simulación o proceder directamente a la contratación.',
+  },
+  {
+    // Aprendido en el piloto de MACS con BMS. Importa porque cambia lo que el
+    // empleado debe esperar: en comida, guardería y transporte no hay nada que
+    // consultar —salen solas—, y solo salud y ahorro tienen un estado real.
+    category: 'productos_general',
+    content: 'Aprobación de las solicitudes: comida, guardería y transporte se aprueban automáticamente, sin depender de nadie. Las solicitudes de seguro de salud y de ahorro se tramitan con la aseguradora y requieren aprobación; según la empresa, las gestiona el mediador de la póliza o el soporte de SNF+.',
+  },
+  {
     // Quién emite la tarjeta y desde dónde se pide son cosas distintas, y se
     // estaban confundiendo: "a través de la aplicación" se leía como la app de
     // Edenred o Pluxee, que es la que el empleado tiene en el móvil. Si la pide
@@ -28,7 +41,7 @@ const UPDATES = [
     // El texto se repite en comida y en transporte porque la búsqueda va
     // acotada por categoría: sin las dos copias, solo respondería una de ellas.
     category: 'comida',
-    content: 'Solicitud de la tarjeta física de comida o transporte: se solicita desde la aplicación de SNF+, no desde la app del emisor. Cada empresa fija en su plan de productos (comida, guardería y transporte) un día de corte mensual: ese día varía de una empresa a otra y este asistente no lo conoce, hay que consultarlo en el plan de productos de la propia empresa. SNF+ comunica al emisor las solicitudes el día siguiente al día de corte del mes anterior al de la primera recarga. A modo de ejemplo, si el día de corte fuera el 20, una solicitud para la primera recarga de noviembre se comunicaría el 21 de octubre. Si el empleado no ha solicitado la tarjeta en la aplicación de SNF+, no la recibirá. Una vez emitida, la tarjeta se gestiona con su emisor: consulta la información específica de tu emisor para saldo, movimientos, activación, bloqueo e incidencias.',
+    content: 'Solicitud de la tarjeta física de comida o transporte: se pide en la aplicación de SNF+, no en la app del emisor, y si no se pide ahí no llega. Cada empresa fija un día de corte mensual en su plan de productos; este asistente no sabe cuál es el de cada empresa, hay que consultarlo con la propia empresa. Si solicitas la tarjeta antes del día de corte, la primera recarga es la del mes siguiente; si la solicitas después, se retrasa un mes más. Una vez emitida, la tarjeta se gestiona con su emisor.',
   },
   {
     // Quién emite la tarjeta y desde dónde se pide son cosas distintas, y se
@@ -44,7 +57,7 @@ const UPDATES = [
     // El texto se repite en comida y en transporte porque la búsqueda va
     // acotada por categoría: sin las dos copias, solo respondería una de ellas.
     category: 'transporte',
-    content: 'Solicitud de la tarjeta física de comida o transporte: se solicita desde la aplicación de SNF+, no desde la app del emisor. Cada empresa fija en su plan de productos (comida, guardería y transporte) un día de corte mensual: ese día varía de una empresa a otra y este asistente no lo conoce, hay que consultarlo en el plan de productos de la propia empresa. SNF+ comunica al emisor las solicitudes el día siguiente al día de corte del mes anterior al de la primera recarga. A modo de ejemplo, si el día de corte fuera el 20, una solicitud para la primera recarga de noviembre se comunicaría el 21 de octubre. Si el empleado no ha solicitado la tarjeta en la aplicación de SNF+, no la recibirá. Una vez emitida, la tarjeta se gestiona con su emisor: consulta la información específica de tu emisor para saldo, movimientos, activación, bloqueo e incidencias.',
+    content: 'Solicitud de la tarjeta física de comida o transporte: se pide en la aplicación de SNF+, no en la app del emisor, y si no se pide ahí no llega. Cada empresa fija un día de corte mensual en su plan de productos; este asistente no sabe cuál es el de cada empresa, hay que consultarlo con la propia empresa. Si solicitas la tarjeta antes del día de corte, la primera recarga es la del mes siguiente; si la solicitas después, se retrasa un mes más. Una vez emitida, la tarjeta se gestiona con su emisor.',
   },
   {
     category: 'transporte',

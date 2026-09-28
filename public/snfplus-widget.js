@@ -61,6 +61,25 @@
         return null;
     }
 
+    /**
+     * Quién gestiona las solicitudes que pasan por la aseguradora (salud y
+     * ahorro) en este cliente: 'mediador' o 'soporte'.
+     *
+     * Se normaliza igual que data-proveedor y por la misma razón: lo rellena
+     * quien incrusta el widget, empresa por empresa. Un valor que no se
+     * reconozca se descarta y el asistente deriva como siempre, a RRHH.
+     */
+    function normalizarGestion(valor) {
+        if (!valor) return null;
+        var limpio = String(valor).trim().toLowerCase();
+        if (limpio === 'mediador' || limpio === 'soporte') return limpio;
+        console.warn(
+            '[SNF+ widget] data-gestion-aseguradora="' + valor + '" no es válido. ' +
+            'Valores admitidos: mediador, soporte. Se ignora.'
+        );
+        return null;
+    }
+
     const CONFIG = {
         brandId:   (_script && _script.getAttribute('data-brand-id')) || 'snfplus_usuario',
         brandName: (_script && _script.getAttribute('data-env-label')) || 'SNF+',
@@ -77,6 +96,7 @@
         // distingue Up Spain de Up One, y responder con los datos del emisor
         // equivocado es peor que no responder.
         proveedor: normalizarProveedor(_script && _script.getAttribute('data-proveedor')),
+        gestionAseguradora: normalizarGestion(_script && _script.getAttribute('data-gestion-aseguradora')),
         baseUrl: (function() {
             if (_script && _script.getAttribute('data-api-url')) {
                 return _script.getAttribute('data-api-url').replace(/\/$/, '');
@@ -873,7 +893,8 @@
                     appUrl:   CONFIG.appUrl  || null,
                     mediador:      CONFIG.mediador      || null,
                     mediadorEmail: CONFIG.mediadorEmail || null,
-                    mediadorTel:   CONFIG.mediadorTel   || null
+                    mediadorTel:   CONFIG.mediadorTel   || null,
+                    gestionAseguradora: CONFIG.gestionAseguradora || null
                 })
             });
 

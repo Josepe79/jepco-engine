@@ -10,6 +10,8 @@
  *   escalate debe reconocer que no lo sabe
  *   (sin expect) da igual si responde o escala; solo importan contains/absent.
  *              Útil para vigilar invenciones donde ambas salidas son legítimas.
+ *   ges      valor de gestionAseguradora ('mediador' o 'soporte'), para los
+ *            casos de estado de solicitud de salud o ahorro
  *   contains la respuesta debe incluir estos textos (sin distinguir acentos)
  *   absent   la respuesta NO debe incluir estos textos (control de invenciones)
  *
@@ -265,6 +267,31 @@ const CASES = [
     expect: 'answer', contains: ['snf'] },
 
 
+  // ── Aprobación y estado de las solicitudes ──────────────────────
+  // Comida, guardería y transporte salen solas; salud y ahorro pasan por la
+  // aseguradora. Saberlo evita que el empleado espere una aprobación que no
+  // existe, o que dé por hecha una que sí.
+  { id: 'aprob-transporte-automatica', brand: 'snfplus_usuario', cat: 'productos_general',
+    q: '¿Quién aprueba mi solicitud de transporte?',
+    expect: 'answer', contains: ['automatica'] },
+  // Con el cliente declarado, el estado va al mediador CON SUS DATOS, no a RRHH.
+  { id: 'estado-salud-mediador', brand: 'snfplus_usuario', cat: 'salud',
+    med: true, ges: 'mediador',
+    q: '¿Cómo va mi solicitud del seguro de salud?',
+    contains: ['correduria ejemplo'], absent: ['recursos humanos'] },
+  // Y al soporte de SNF+ cuando el cliente lo lleva así (caso AXA).
+  { id: 'estado-salud-soporte', brand: 'snfplus_usuario', cat: 'salud',
+    med: true, ges: 'soporte',
+    q: '¿Cómo va mi solicitud del seguro de salud?',
+    contains: ['soporte'], absent: ['recursos humanos'] },
+  // El día de corte manda en cuándo llega la primera recarga. Lo que no puede
+  // es inventarse un plazo de envío, que no está en ningún sitio.
+  { id: 'recarga-primera-corte', brand: 'snfplus_usuario', cat: 'comida',
+    q: '¿Cuándo me llega la primera recarga si la pido ahora?',
+    contains: ['corte'],
+    absent: ['48 horas', '72 horas', 'dias habiles', '7 dias', '15 dias', 'una semana'] },
+
+
   // ── Invenciones ─────────────────────────────────────────────────────────
   // Sin emisor, el contexto de guardería solo trae el fragmento genérico, que
   // no explica el mecanismo de pago. Puede responder con lo que sí tiene (el
@@ -317,6 +344,7 @@ async function run(c) {
     category: c.cat || null,
     ...(c.prov ? { provider: c.prov } : {}),
     ...(c.med ? MED : {}),
+    ...(c.ges ? { gestionAseguradora: c.ges } : {}),
   };
 
   const res = await fetch(`${BASE}/api/chat`, {

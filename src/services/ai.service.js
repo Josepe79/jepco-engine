@@ -86,7 +86,8 @@ async function getAIResponse(brandId, userMessage, history = [], options = {}) {
   if (!brand) throw new Error('Unknown brand');
 
   const { category = null, appUrl = null, provider = null,
-          mediador = null, mediadorEmail = null, mediadorTel = null } = options;
+          mediador = null, mediadorEmail = null, mediadorTel = null,
+          gestionAseguradora = null } = options;
 
   const safeAppUrl        = sanitizeParam(appUrl, 200);
   const safeMediador      = sanitizeParam(mediador, 150);
@@ -99,6 +100,13 @@ async function getAIResponse(brandId, userMessage, history = [], options = {}) {
   const mediadorContacto = [safeMediador, safeMediadorTel, safeMediadorEmail]
     .filter(Boolean).join(', ');
   const mediadorRef = mediadorContacto || 'el mediador de tu póliza';
+
+  // Quién lleva el estado de las solicitudes que pasan por la aseguradora.
+  // Solo salud y ahorro lo tienen: el resto se aprueba solo. Si el cliente no
+  // lo declara, no se añade la regla y se deriva como siempre.
+  const gestionRef = gestionAseguradora === 'mediador' ? mediadorRef
+                   : gestionAseguradora === 'soporte'  ? 'el soporte de SNF+'
+                   : null;
 
   // 1. Obtener contexto relevante de la base de conocimientos.
   //
@@ -160,13 +168,17 @@ CÓMO ESCALAR:
    Empieza obligatoriamente por "[ESCALAR_A_HUMANO]", una sola vez y al principio, sin explicarla ni mencionarla. Después:
    - SOLO si la duda es sobre coberturas o condiciones del SEGURO DE SALUD: "No tengo esa información. Esa consulta la resuelve tu mediador: ${mediadorRef}."
    - En cualquier otro caso, incluidas las tarjetas de comida, guardería y transporte: "No tengo esa información. Consúltalo con ${brand.escalationFallback || 'el equipo de soporte'}."
-   El mediador es de seguros: no lo menciones nunca fuera de dudas de la póliza de salud.
+   El mediador es de seguros: no lo menciones fuera de dudas de la póliza de salud o del estado de una solicitud de salud o ahorro.
    Y nunca digas que has avisado a alguien o que van a contactar al usuario: no es cierto y no puede cumplirse.
 
 CASO ESPECIAL, SEGURO DE SALUD — tiene dos mitades que se tratan distinto:
    - FISCALIDAD Y FUNCIONAMIENTO (límites de importe, quién puede incluirse, edad de los hijos, discapacidad, duración del contrato, requisitos, cómo se contrata): esto sí lo sabes. Respóndelo y no derives al mediador.
    - COBERTURAS Y CONDICIONES DE LA PÓLIZA (qué incluye o excluye, cuadro médico, especialidades, reembolsos, reclamaciones, altas y bajas con la aseguradora): esto no lo sabes. Deriva al mediador: ${mediadorRef}.
    - Si la pregunta es genérica o ambigua, responde la parte fiscal y cierra indicando que para coberturas concretas contacte con el mediador. Ahí NO escales: sí has respondido.
+
+${gestionRef ? `ESTADO DE UNA SOLICITUD DE SALUD O AHORRO:
+   Si preguntan cómo va, en qué punto está, si ya está aprobada o cuánto tarda una solicitud de SEGURO DE SALUD o de AHORRO: no lo sabes, y no se consulta con Recursos Humanos. Di que esas dos se tramitan con la aseguradora y que el estado lo lleva ${gestionRef}.
+   Comida, guardería y transporte se aprueban automáticamente: si preguntan por su estado o por quién las aprueba, dilo y no derives a nadie.` : ''}
 
 FORMA DE ESCRIBIR:
    Máximo 3 frases cortas, nunca más. Lenguaje simple y directo, como por WhatsApp. Solo texto plano: sin asteriscos, negritas, guiones, listas ni títulos. Nada de introducciones tipo "¡Claro!" o "Por supuesto": ve directo a la respuesta, sin repetir la pregunta.`;
