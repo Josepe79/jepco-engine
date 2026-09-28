@@ -15,6 +15,26 @@ const BRAND_ID = 'snfplus_usuario';
 // que traía la web de Up Spain — no era un dato suyo, era esta misma norma.
 const UPDATES = [
   {
+    // Dónde llega la tarjeta, que no es donde la gente supone: va a la empresa,
+    // no al domicilio. Sin esto el empleado la espera en casa y da por perdida
+    // una tarjeta que está en su oficina.
+    //
+    // Se repite en comida y transporte porque la búsqueda va acotada por
+    // categoría. Fuente: equipo de soporte, 28-09-2026.
+    category: 'comida',
+    content: 'Envío de la tarjeta física de comida o transporte: el emisor envía la tarjeta a la empresa del empleado, no a su domicilio, a la atención de la persona que la empresa ha designado como contacto ante el emisor. El empleado la recoge en su empresa. El plazo habitual de llegada es de 5 a 10 días hábiles desde que SNF+ solicita la tarjeta al emisor, lo que ocurre el día siguiente al día de corte.',
+  },
+  {
+    // Dónde llega la tarjeta, que no es donde la gente supone: va a la empresa,
+    // no al domicilio. Sin esto el empleado la espera en casa y da por perdida
+    // una tarjeta que está en su oficina.
+    //
+    // Se repite en comida y transporte porque la búsqueda va acotada por
+    // categoría. Fuente: equipo de soporte, 28-09-2026.
+    category: 'transporte',
+    content: 'Envío de la tarjeta física de comida o transporte: el emisor envía la tarjeta a la empresa del empleado, no a su domicilio, a la atención de la persona que la empresa ha designado como contacto ante el emisor. El empleado la recoge en su empresa. El plazo habitual de llegada es de 5 a 10 días hábiles desde que SNF+ solicita la tarjeta al emisor, lo que ocurre el día siguiente al día de corte.',
+  },
+  {
     // Ya existía y viene de load-snfplus-manual.js. Se copia aquí porque al
     // entrar 'productos_general' en la lista, el borrado se lleva la categoría.
     category: 'productos_general',

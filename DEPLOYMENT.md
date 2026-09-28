@@ -462,6 +462,26 @@ Al actualizar un fragmento genérico con `update-chunk.js`, el borrado filtra po
 `provider IS NULL`. Sin ese filtro, tocar el texto genérico de transporte se
 llevaría por delante las FAQs de todos los emisores, que comparten categoría.
 
+### El techo de la recuperación
+
+Cada consulta recupera **3 fragmentos genéricos y 5 del emisor**, con cupo propio
+cada grupo en vez de un único top-8 común.
+
+El cupo existe por un fallo concreto. Mientras `comida` tuvo 3 genéricos y 5 de
+emisor sumaban justo 8 y entraban todos. Al añadir el cuarto genérico pasaron a
+ser 9: uno se caía en cada consulta, y **cuál se caía dependía de la pregunta**,
+así que cuatro casos de comida se volvieron inestables a la vez. Con cupo
+separado, añadir conocimiento genérico ya no puede desalojar al del emisor.
+
+El total sigue siendo 8 a propósito. Se probó con 4+6 y salió peor: más contexto
+diluye, y los fallos fijos pasaron de 1 a 4. Subir el cupo no es gratis.
+
+Sigue habiendo techo: con más de 3 genéricos en una categoría, el menos parecido
+se queda fuera — pero ahora se cae siempre el mismo y de forma predecible, no uno
+al azar.
+
+---
+
 ### Categorías reconocidas
 
 Al añadir una categoría nueva hay que darla de alta en `ALLOWED_CATEGORIES`
@@ -549,7 +569,7 @@ node scratch/regression.js           # 3 rondas por caso
 node scratch/regression.js --reps 1  # una ronda: rápido, no comparable
 ```
 
-Comprueba 70 casos: que responda lo que sabe, que escale lo que no, que cada
+Comprueba 72 casos: que responda lo que sabe, que escale lo que no, que cada
 emisor dé sus propios datos y que no aparezcan invenciones concretas
 (`absent: ['cualquier sitio']`, `absent: ['cheque gourmet']`, `absent:
 ['931 110 086']` en respuestas de Pluxee).
@@ -574,7 +594,7 @@ ningún cambio. El resultado se reparte en tres grupos:
 | **inestable** | 1 o 2 de 3. No sabemos si funciona — no es medio acierto. |
 | **falla siempre** | 0 de 3. Roto de forma reproducible. |
 
-Marca actual: **66 estables · 1 inestable · 3 fallan siempre**, sobre 70 casos.
+Marca actual: **68 estables · 2 inestables · 2 fallan siempre**, sobre 72 casos.
 
 Para afinar un caso concreto, `--reps 6` distingue mucho mejor un fallo real de
 una casualidad.

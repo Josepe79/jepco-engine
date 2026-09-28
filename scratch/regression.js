@@ -297,7 +297,20 @@ const CASES = [
   { id: 'recarga-primera-corte', brand: 'snfplus_usuario', cat: 'comida',
     q: '¿Cuándo me llega la primera recarga si la pido ahora?',
     contains: ['corte'],
-    absent: ['48 horas', '72 horas', 'dias habiles', '7 dias', '15 dias', 'una semana'] },
+    absent: ['48 horas', '72 horas', '7 dias', '15 dias', 'una semana'] },
+
+
+  // ── Envío de la tarjeta ────────────────────────────────────
+  // Llega a la empresa, no al domicilio. Es contraintuitivo: sin esto el
+  // empleado la espera en casa y da por perdida una tarjeta que está en su
+  // oficina. Se piden las dos mitades —dónde y cuánto tarda— porque la
+  // respuesta útil las lleva juntas.
+  { id: 'envio-tarjeta-comida', brand: 'snfplus_usuario', cat: 'comida',
+    q: '¿Dónde me llega la tarjeta de comida?',
+    expect: 'answer', contains: ['empresa', 'habiles'] },
+  { id: 'envio-tarjeta-transporte', brand: 'snfplus_usuario', cat: 'transporte',
+    q: '¿Dónde me llega la tarjeta de transporte?',
+    expect: 'answer', contains: ['empresa', 'habiles'] },
 
 
   // ── Invenciones ─────────────────────────────────────────────────────────

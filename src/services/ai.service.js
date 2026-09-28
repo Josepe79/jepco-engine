@@ -68,6 +68,16 @@ const genAI = new GoogleGenerativeAI(config.GEMINI_API_KEY, { apiVersion: 'v1' }
  */
 const RETRIEVAL_LIMIT = 8;
 
+// Cupo por grupo cuando el usuario tiene emisor conocido.
+//
+// Con un único top-8 común, genéricos y fragmentos del emisor competían por los
+// mismos huecos. Mientras sumaron 8 no se notaba; al añadir el cuarto genérico a
+// comida pasaron a ser 9 y uno se caía en cada consulta — cuál, dependía de la
+// pregunta, así que cuatro casos de comida se volvieron inestables a la vez.
+// Con cupo propio, añadir conocimiento genérico deja de poder desalojar al emisor.
+const RETRIEVAL_GENERICOS = 3;
+const RETRIEVAL_EMISOR    = 5;
+
 /** Nombres legibles de los emisores, para nombrarlos en el prompt. */
 const PROVIDER_LABELS = {
   edenred:  'Edenred',
@@ -124,7 +134,16 @@ async function getAIResponse(brandId, userMessage, history = [], options = {}) {
 
   try {
     const queryEmbedding = await vectorService.generateEmbedding(userMessage);
-    let similarChunks = await vectorService.findSimilarDocuments(brandId, queryEmbedding, RETRIEVAL_LIMIT, category, provider);
+    let similarChunks;
+    if (provider) {
+      const [gen, emi] = await Promise.all([
+        vectorService.findSimilarDocuments(brandId, queryEmbedding, RETRIEVAL_GENERICOS, category, null),
+        vectorService.findSimilarDocuments(brandId, queryEmbedding, RETRIEVAL_EMISOR, category, provider, true),
+      ]);
+      similarChunks = [...gen, ...emi].sort((a, b) => b.similarity - a.similarity);
+    } else {
+      similarChunks = await vectorService.findSimilarDocuments(brandId, queryEmbedding, RETRIEVAL_LIMIT, category, provider);
+    }
 
     // Si la categoría pedida no devuelve nada, se reintenta sin filtro.
     // Que esto ocurra es en sí una señal: esa categoría no tiene contenido.

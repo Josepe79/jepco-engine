@@ -38,7 +38,7 @@ async function generateEmbedding(text) {
  * Sin proveedor conocido se devuelve solo lo genérico: es preferible no
  * responder a responder con los datos del emisor equivocado.
  */
-async function findSimilarDocuments(brandId, queryEmbedding, limit = 5, category = null, provider = null) {
+async function findSimilarDocuments(brandId, queryEmbedding, limit = 5, category = null, provider = null, providerOnly = false) {
   try {
     // pgvector: la similitud de coseno es 1 - (embedding <=> vector)
     const vectorString = `[${queryEmbedding.join(',')}]`;
@@ -57,7 +57,15 @@ async function findSimilarDocuments(brandId, queryEmbedding, limit = 5, category
       query += ` AND "category" = $${params.length}`;
     }
 
-    if (provider) {
+    if (provider && providerOnly) {
+      // Solo los fragmentos del emisor. Permite pedir por separado los
+      // genéricos y los del emisor, cada uno con su cupo, en vez de hacerlos
+      // competir por un único top-N: con 4 genéricos y 5 de emisor, un límite
+      // común de 8 dejaba fuera uno de los nueve, y cuál se caía dependía de
+      // la pregunta — las respuestas de comida se volvieron inestables.
+      params.push(provider);
+      query += ` AND "provider" = $${params.length}`;
+    } else if (provider) {
       params.push(provider);
       query += ` AND ("provider" IS NULL OR "provider" = $${params.length})`;
     } else {
