@@ -464,8 +464,13 @@ llevaría por delante las FAQs de todos los emisores, que comparten categoría.
 
 ### El techo de la recuperación
 
-Cada consulta recupera **3 fragmentos genéricos y 5 del emisor**, con cupo propio
-cada grupo en vez de un único top-8 común.
+Cada consulta recupera **hasta 3 fragmentos genéricos y 5 del emisor**, con cupo
+propio cada grupo en vez de un único top-8 común.
+
+El cupo genérico solo baja a 3 si hay fragmentos de emisor que ocupen el sitio.
+En categorías sin contenido por emisor —acceso, productos, salud, familiares—
+se mantiene en 8: recortarlas también era un error, perdían contenido para
+dejar huecos que nadie ocupaba.
 
 El cupo existe por un fallo concreto. Mientras `comida` tuvo 3 genéricos y 5 de
 emisor sumaban justo 8 y entraban todos. Al añadir el cuarto genérico pasaron a
@@ -569,7 +574,7 @@ node scratch/regression.js           # 3 rondas por caso
 node scratch/regression.js --reps 1  # una ronda: rápido, no comparable
 ```
 
-Comprueba 72 casos: que responda lo que sabe, que escale lo que no, que cada
+Comprueba 76 casos: que responda lo que sabe, que escale lo que no, que cada
 emisor dé sus propios datos y que no aparezcan invenciones concretas
 (`absent: ['cualquier sitio']`, `absent: ['cheque gourmet']`, `absent:
 ['931 110 086']` en respuestas de Pluxee).
@@ -594,7 +599,13 @@ ningún cambio. El resultado se reparte en tres grupos:
 | **inestable** | 1 o 2 de 3. No sabemos si funciona — no es medio acierto. |
 | **falla siempre** | 0 de 3. Roto de forma reproducible. |
 
-Marca actual: **68 estables · 2 inestables · 2 fallan siempre**, sobre 72 casos.
+Marca actual: **68 estables · 3 inestables · 5 fallan siempre**, sobre 76 casos.
+
+Los cinco fijos son sobre-escalados en respuestas por emisor de `comida`, y empeoraron con el lote del buzón de soporte: esa categoría pasó de 4 a 6
+fragmentos genéricos para 3 huecos, así que los tres que ganan no siempre son
+los que hacían falta. Se probó bajar el cupo genérico a 2 para dar aire al
+emisor: recupera dos casos y rompe otros dos, con el mismo total. Es un
+intercambio, no una mejora, y por eso se quedó en 3.
 
 Para afinar un caso concreto, `--reps 6` distingue mucho mejor un fallo real de
 una casualidad.

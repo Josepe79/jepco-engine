@@ -136,11 +136,19 @@ async function getAIResponse(brandId, userMessage, history = [], options = {}) {
     const queryEmbedding = await vectorService.generateEmbedding(userMessage);
     let similarChunks;
     if (provider) {
-      const [gen, emi] = await Promise.all([
-        vectorService.findSimilarDocuments(brandId, queryEmbedding, RETRIEVAL_GENERICOS, category, null),
+      const [genTodos, emi] = await Promise.all([
+        vectorService.findSimilarDocuments(brandId, queryEmbedding, RETRIEVAL_LIMIT, category, null),
         vectorService.findSimilarDocuments(brandId, queryEmbedding, RETRIEVAL_EMISOR, category, provider, true),
       ]);
-      similarChunks = [...gen, ...emi].sort((a, b) => b.similarity - a.similarity);
+      // Los genéricos solo ceden sitio si hay fragmentos de emisor que lo ocupen.
+      //
+      // La primera versión recortaba a RETRIEVAL_GENERICOS siempre que el usuario
+      // tuviera emisor, y eso castigaba a categorías donde no hay ni un fragmento
+      // por emisor — acceso, productos, salud, familiares: se quedaban en 3 de 4 o
+      // de 5 sin que nadie ocupara los huecos liberados.
+      const cupoGen = Math.max(RETRIEVAL_GENERICOS, RETRIEVAL_LIMIT - emi.length);
+      similarChunks = [...genTodos.slice(0, cupoGen), ...emi]
+        .sort((a, b) => b.similarity - a.similarity);
     } else {
       similarChunks = await vectorService.findSimilarDocuments(brandId, queryEmbedding, RETRIEVAL_LIMIT, category, provider);
     }
@@ -195,7 +203,7 @@ ${mediadorContacto ? `Mediador de seguros de este cliente: ${mediadorContacto}` 
 
 CONTEXTO DE ESTA CONSULTA:
 ${category ? `El usuario pregunta por la sección "${category}". Lee toda su pregunta en ese contexto, aunque no lo mencione. Esto te dice de QUÉ habla, no lo que debes contestar: la respuesta sigue teniendo que salir de la INFORMACIÓN RECUPERADA.` : 'El usuario no ha indicado sección: es una pregunta abierta.'}
-${provider && PROVIDER_LABELS[provider] ? `Su tarjeta la emite ${PROVIDER_LABELS[provider]}. La INFORMACIÓN RECUPERADA viene en dos bloques: los PARÁMETROS GENERALES valen con cualquier emisor, y los DATOS DE ${PROVIDER_LABELS[provider].toUpperCase()} son los de su tarjeta concreta. Si pregunta por su tarjeta —dónde se usa, cómo se activa, a quién llamar, qué app, qué hacer si la pierde— la respuesta suele estar en el bloque de su emisor: mírala ahí antes de decir que no la tienes.` : ''}
+${provider && PROVIDER_LABELS[provider] ? `Su tarjeta la emite ${PROVIDER_LABELS[provider]}. La INFORMACIÓN RECUPERADA viene en dos bloques: los PARÁMETROS GENERALES valen con cualquier emisor, y los DATOS DE ${PROVIDER_LABELS[provider].toUpperCase()} son los de su tarjeta concreta. Si pregunta por cómo funciona su producto en la práctica —dónde se usa, cómo se activa, cómo y cuándo se paga, a quién llamar, qué app, qué hacer si la pierde o si su centro no está adherido— la respuesta suele estar en el bloque de su emisor: mírala ahí antes de responder solo con los parámetros generales o de decir que no la tienes.` : ''}
 
 INFORMACIÓN RECUPERADA (úsala si es relevante):
 ${context || 'Sin información adicional.'}

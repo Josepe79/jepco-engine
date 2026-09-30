@@ -111,9 +111,12 @@ const CASES = [
     expect: 'escalate', absent: ['cualquier lugar', 'cualquier sitio', 'metro'] },
   // Control anti-invención. Up Spain no publica teléfono de atención en ninguna
   // de sus páginas, así que no debe salir ninguno — y menos el de otro emisor.
+  // Exigía escalar porque no teníamos nada de Up Spain para incidencias. El lote
+  // del buzón añadió pérdida y duplicado, así que ahora puede responder a quién
+  // dirigirse. Sin `expect`: responder o escalar valen; lo que se vigila es que
+  // no se invente un teléfono, que sigue sin estar en el conocimiento.
   { id: 'hueco-tel-upspain', brand: 'snfplus_usuario', cat: 'comida', prov: 'up_spain',
     q: '¿A qué teléfono llamo si tengo una incidencia con la tarjeta?',
-    expect: 'escalate',
     absent: ['931 110 086', '919 100 757', '900 800 777'] },
 
   // ── Comida por emisor ───────────────────────────────────────────────────
@@ -220,9 +223,11 @@ const CASES = [
   { id: 'gua-upspain-nombre', brand: 'snfplus_usuario', cat: 'guarderia', prov: 'up_spain',
     q: '¿Cómo se llama el producto de guardería de mi proveedor?',
     expect: 'answer', contains: ['educainfantil'], absent: ['pluxee', 'edenred'] },
+  // Decía 'ultimo dia habil' hasta que soporte lo corrigió en septiembre de 2026:
+  // es el día 1. El caso defendía el dato equivocado.
   { id: 'gua-upspain-cuando-paga', brand: 'snfplus_usuario', cat: 'guarderia', prov: 'up_spain',
     q: '¿Cuándo se paga a la guardería?',
-    expect: 'answer', contains: ['ultimo dia habil'] },
+    expect: 'answer', contains: ['dia 1'], absent: ['ultimo dia habil'] },
   { id: 'gua-upspain-diferencia', brand: 'snfplus_usuario', cat: 'guarderia', prov: 'up_spain',
     q: '¿Qué pasa si la cuota es más alta que lo que me gestionan?',
     expect: 'answer', contains: ['diferencia'] },
@@ -311,6 +316,26 @@ const CASES = [
   { id: 'envio-tarjeta-transporte', brand: 'snfplus_usuario', cat: 'transporte',
     q: '¿Dónde me llega la tarjeta de transporte?',
     expect: 'answer', contains: ['empresa', 'habiles'] },
+
+
+  // ── Buzón de soporte (AXA Flex) ─────────────────────────────
+  // Corrección: antes decía "último día hábil". Soporte confirmó que es el día 1.
+  // El `absent` vigila que no reaparezca el dato viejo.
+  { id: 'sop-upspain-dia-pago', brand: 'snfplus_usuario', cat: 'guarderia', prov: 'up_spain',
+    q: '¿Qué día paga Up Spain a la guardería?',
+    expect: 'answer', contains: ['dia 1'], absent: ['ultimo dia habil'] },
+  // La consulta más repetida del buzón. El usuario es el correo, no el DNI.
+  { id: 'sop-no-puedo-entrar', brand: 'snfplus_usuario', cat: 'acceso_navegacion',
+    q: 'No puedo entrar en la aplicación, ¿qué hago?',
+    expect: 'answer', contains: ['correo'] },
+  // Contratar no termina al firmar la novación: si se queda en simulado, se pierde.
+  { id: 'sop-producto-en-curso', brand: 'snfplus_usuario', cat: 'productos_general',
+    q: 'Mi producto sale como simulado, ¿está contratado?',
+    expect: 'answer', contains: ['contratados'] },
+  // RRHH: el reparto EXENTO/ESPECIE es la duda recurrente de nómina.
+  { id: 'sop-rrhh-exento-especie', brand: 'snfplus_rrhh', cat: 'informes',
+    q: '¿Por qué el seguro de salud sale partido entre EXENTO y ESPECIE?',
+    expect: 'answer', contains: ['500'] },
 
 
   // ── Invenciones ─────────────────────────────────────────────────────────
