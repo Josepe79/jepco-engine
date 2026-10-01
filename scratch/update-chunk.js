@@ -1,6 +1,16 @@
 /**
  * Actualiza o inserta un chunk de conocimiento por brandId + categoria.
  * Uso: node scratch/update-chunk.js
+ *
+ * AVISO: después de este guion hay que lanzar SIEMPRE
+ *
+ *     node scratch/load-soporte-axaflex.js
+ *
+ * Este borra la categoría entera antes de insertar, y el lote del buzón de
+ * soporte tiene fragmentos genéricos en seis de las categorías que toca
+ * —comida, transporte, guardería, salud, familiares y productos_general—, así
+ * que se los lleva por delante: once fragmentos que desaparecen sin avisar.
+ * Aquel guion es relanzable y los repone.
  */
 require('dotenv').config();
 const crypto = require('crypto');
@@ -15,24 +25,24 @@ const BRAND_ID = 'snfplus_usuario';
 // que traía la web de Up Spain — no era un dato suyo, era esta misma norma.
 const UPDATES = [
   {
-    // Dónde llega la tarjeta, que no es donde la gente supone: va a la empresa,
-    // no al domicilio. Sin esto el empleado la espera en casa y da por perdida
-    // una tarjeta que está en su oficina.
+    // Solicitud, envío y correo de activación eran tres fragmentos: los tres
+    // cuentan tramos del mismo proceso, y sueltos llenaban `comida` hasta 6
+    // genéricos para 3 huecos de recuperación. Soporte confirmó que se pueden
+    // contar como uno y aportó este texto unido.
     //
-    // Se repite en comida y transporte porque la búsqueda va acotada por
-    // categoría. Fuente: equipo de soporte, 28-09-2026.
+    // Va en las dos categorías porque la búsqueda está acotada por categoría.
     category: 'comida',
-    content: 'Envío de la tarjeta física de comida o transporte: el emisor envía la tarjeta a la empresa del empleado, no a su domicilio, a la atención de la persona que la empresa ha designado como contacto ante el emisor. El empleado la recoge en su empresa. El plazo habitual de llegada es de 5 a 10 días hábiles desde que SNF+ solicita la tarjeta al emisor, lo que ocurre el día siguiente al día de corte.',
+    content: `Tarjeta física de comida o transporte: solicitud, envío y activación. 1) Se pide en la aplicación de SNF+, no en la app del emisor; si no se pide ahí, no llega. 2) Cada empresa fija un día de corte mensual en su plan de productos; este asistente no sabe cuál es el de cada empresa, hay que consultarlo con la propia empresa. Si la solicitas antes del día de corte, la primera recarga es la del mes siguiente; si la solicitas después, se retrasa un mes más. 3) Al solicitarla no recibirás nada en el momento: SNF+ hace el pedido al emisor el día siguiente al día de corte, y es entonces cuando el emisor (Pluxee, Up Spain o Edenred) te envía el correo para registrarte y activar la tarjeta. 4) El emisor envía la tarjeta a tu empresa, no a tu domicilio, a la atención de la persona que la empresa ha designado como contacto ante el emisor, y la recoges allí. El plazo habitual es de 5 a 10 días hábiles desde que SNF+ la solicita al emisor. 5) Si después del día de corte no te ha llegado el correo, comprueba que el producto aparece en 'Productos contratados' y revisa la carpeta de spam. Una vez emitida, la tarjeta se gestiona con su emisor.`,
   },
   {
-    // Dónde llega la tarjeta, que no es donde la gente supone: va a la empresa,
-    // no al domicilio. Sin esto el empleado la espera en casa y da por perdida
-    // una tarjeta que está en su oficina.
+    // Solicitud, envío y correo de activación eran tres fragmentos: los tres
+    // cuentan tramos del mismo proceso, y sueltos llenaban `comida` hasta 6
+    // genéricos para 3 huecos de recuperación. Soporte confirmó que se pueden
+    // contar como uno y aportó este texto unido.
     //
-    // Se repite en comida y transporte porque la búsqueda va acotada por
-    // categoría. Fuente: equipo de soporte, 28-09-2026.
+    // Va en las dos categorías porque la búsqueda está acotada por categoría.
     category: 'transporte',
-    content: 'Envío de la tarjeta física de comida o transporte: el emisor envía la tarjeta a la empresa del empleado, no a su domicilio, a la atención de la persona que la empresa ha designado como contacto ante el emisor. El empleado la recoge en su empresa. El plazo habitual de llegada es de 5 a 10 días hábiles desde que SNF+ solicita la tarjeta al emisor, lo que ocurre el día siguiente al día de corte.',
+    content: `Tarjeta física de comida o transporte: solicitud, envío y activación. 1) Se pide en la aplicación de SNF+, no en la app del emisor; si no se pide ahí, no llega. 2) Cada empresa fija un día de corte mensual en su plan de productos; este asistente no sabe cuál es el de cada empresa, hay que consultarlo con la propia empresa. Si la solicitas antes del día de corte, la primera recarga es la del mes siguiente; si la solicitas después, se retrasa un mes más. 3) Al solicitarla no recibirás nada en el momento: SNF+ hace el pedido al emisor el día siguiente al día de corte, y es entonces cuando el emisor (Pluxee, Up Spain o Edenred) te envía el correo para registrarte y activar la tarjeta. 4) El emisor envía la tarjeta a tu empresa, no a tu domicilio, a la atención de la persona que la empresa ha designado como contacto ante el emisor, y la recoges allí. El plazo habitual es de 5 a 10 días hábiles desde que SNF+ la solicita al emisor. 5) Si después del día de corte no te ha llegado el correo, comprueba que el producto aparece en 'Productos contratados' y revisa la carpeta de spam. Una vez emitida, la tarjeta se gestiona con su emisor.`,
   },
   {
     // Ya existía y viene de load-snfplus-manual.js. Se copia aquí porque al
@@ -46,38 +56,6 @@ const UPDATES = [
     // consultar —salen solas—, y solo salud y ahorro tienen un estado real.
     category: 'productos_general',
     content: 'Aprobación de las solicitudes: comida, guardería y transporte se aprueban automáticamente, sin depender de nadie. Las solicitudes de seguro de salud y de ahorro se tramitan con la aseguradora y requieren aprobación; según la empresa, las gestiona el mediador de la póliza o el soporte de SNF+.',
-  },
-  {
-    // Quién emite la tarjeta y desde dónde se pide son cosas distintas, y se
-    // estaban confundiendo: "a través de la aplicación" se leía como la app de
-    // Edenred o Pluxee, que es la que el empleado tiene en el móvil. Si la pide
-    // ahí, no llega nunca.
-    //
-    // El día de corte va deliberadamente rodeado de avisos. El chatbot es
-    // anónimo: no sabe de qué empresa es quien pregunta, así que no puede saber
-    // su día de corte. El 20 es un ejemplo y está redactado en condicional para
-    // que no lo devuelva como si fuera el dato del usuario.
-    //
-    // El texto se repite en comida y en transporte porque la búsqueda va
-    // acotada por categoría: sin las dos copias, solo respondería una de ellas.
-    category: 'comida',
-    content: 'Solicitud de la tarjeta física de comida o transporte: se pide en la aplicación de SNF+, no en la app del emisor, y si no se pide ahí no llega. Cada empresa fija un día de corte mensual en su plan de productos; este asistente no sabe cuál es el de cada empresa, hay que consultarlo con la propia empresa. Si solicitas la tarjeta antes del día de corte, la primera recarga es la del mes siguiente; si la solicitas después, se retrasa un mes más. Una vez emitida, la tarjeta se gestiona con su emisor.',
-  },
-  {
-    // Quién emite la tarjeta y desde dónde se pide son cosas distintas, y se
-    // estaban confundiendo: "a través de la aplicación" se leía como la app de
-    // Edenred o Pluxee, que es la que el empleado tiene en el móvil. Si la pide
-    // ahí, no llega nunca.
-    //
-    // El día de corte va deliberadamente rodeado de avisos. El chatbot es
-    // anónimo: no sabe de qué empresa es quien pregunta, así que no puede saber
-    // su día de corte. El 20 es un ejemplo y está redactado en condicional para
-    // que no lo devuelva como si fuera el dato del usuario.
-    //
-    // El texto se repite en comida y en transporte porque la búsqueda va
-    // acotada por categoría: sin las dos copias, solo respondería una de ellas.
-    category: 'transporte',
-    content: 'Solicitud de la tarjeta física de comida o transporte: se pide en la aplicación de SNF+, no en la app del emisor, y si no se pide ahí no llega. Cada empresa fija un día de corte mensual en su plan de productos; este asistente no sabe cuál es el de cada empresa, hay que consultarlo con la propia empresa. Si solicitas la tarjeta antes del día de corte, la primera recarga es la del mes siguiente; si la solicitas después, se retrasa un mes más. Una vez emitida, la tarjeta se gestiona con su emisor.',
   },
   {
     category: 'transporte',

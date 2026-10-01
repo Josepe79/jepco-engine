@@ -93,16 +93,23 @@ npx prisma db push
 
 # 3. Variables de entorno (ver §2)
 
-# 4. Cargar el conocimiento. Los cinco pasos, y en este orden.
+# 4. Cargar el conocimiento. Los seis pasos, y en este orden.
 node scratch/load-snfplus-manual.js   # manual del empleado
 node scratch/load-rrhh-manual.js      # manual de RRHH
 node scratch/load-gestor-manual.js    # manual del gestor
 node scratch/load-provider-faq.js     # FAQ por emisor: Edenred, Pluxee, Up Spain
 node scratch/update-chunk.js          # correcciones sobre los fragmentos genéricos
+node scratch/load-soporte-axaflex.js  # conocimiento del buzón de soporte
 
 # 5. Arrancar
 npm start
 ```
+
+**El orden importa, y no es cosmético.** `update-chunk.js` borra la categoría
+entera antes de insertar, y el lote del buzón tiene genéricos en seis de esas
+categorías. Lanzarlo después del buzón se lleva once fragmentos por delante sin
+decir nada. Si alguna vez hay que tocar `update-chunk.js`, detrás va siempre
+`load-soporte-axaflex.js`, que es relanzable y los repone.
 
 **Los pasos 4 y 5 de la carga no son opcionales.** Sin `load-provider-faq.js` el
 bot no sabe nada de tarjetas concretas y responde "no tengo esa información" a
@@ -574,7 +581,7 @@ node scratch/regression.js           # 3 rondas por caso
 node scratch/regression.js --reps 1  # una ronda: rápido, no comparable
 ```
 
-Comprueba 76 casos: que responda lo que sabe, que escale lo que no, que cada
+Comprueba 78 casos: que responda lo que sabe, que escale lo que no, que cada
 emisor dé sus propios datos y que no aparezcan invenciones concretas
 (`absent: ['cualquier sitio']`, `absent: ['cheque gourmet']`, `absent:
 ['931 110 086']` en respuestas de Pluxee).
@@ -599,13 +606,29 @@ ningún cambio. El resultado se reparte en tres grupos:
 | **inestable** | 1 o 2 de 3. No sabemos si funciona — no es medio acierto. |
 | **falla siempre** | 0 de 3. Roto de forma reproducible. |
 
-Marca actual: **68 estables · 3 inestables · 5 fallan siempre**, sobre 76 casos.
+Marca actual: **73 estables · 2 inestables · 3 fallan siempre**, sobre 78 casos.
 
-Los cinco fijos son sobre-escalados en respuestas por emisor de `comida`, y empeoraron con el lote del buzón de soporte: esa categoría pasó de 4 a 6
-fragmentos genéricos para 3 huecos, así que los tres que ganan no siempre son
-los que hacían falta. Se probó bajar el cupo genérico a 2 para dar aire al
-emisor: recupera dos casos y rompe otros dos, con el mismo total. Es un
-intercambio, no una mejora, y por eso se quedó en 3.
+Los tres fijos son sobre-escalados en respuestas por emisor de `comida`.
+Mejoraron al fundir solicitud, envío y correo de activación en un solo
+fragmento: esa categoría bajó de 6 genéricos a 4 para 3 huecos. Antes se probó
+bajar el cupo genérico a 2 para dar aire al emisor, y solo intercambiaba casos.
+**Quitar fragmentos funcionó donde repartir mejor los huecos no funcionó.**
+
+### Un caso que falla puede ser un caso mal escrito
+
+Tres veces un fallo resultó ser de la prueba, no del bot:
+
+- `gua-upspain-cuando-paga` exigía "último día hábil" después de que soporte
+  corrigiera el dato. La suite defendía el error durante semanas.
+- `gua-pluxee-nombre` preguntaba "¿cómo funciona el pago de la guardería?" y
+  exigía el nombre de Pluxee. 'Pago' significa con qué paga el empleado y
+  también cuándo cobra el centro, y hay un fragmento para cada sentido: el bot
+  elegía uno, siempre válido.
+- `envio-tarjeta-comida` preguntaba dónde llega la tarjeta y exigía además el
+  plazo. Responder solo al "¿dónde?" es lo correcto.
+
+Los tres se arreglaron partiendo la pregunta: **un hecho por caso**. Antes de
+tocar el prompt o el conocimiento, comprobar que la pregunta es justa.
 
 Para afinar un caso concreto, `--reps 6` distingue mucho mejor un fallo real de
 una casualidad.

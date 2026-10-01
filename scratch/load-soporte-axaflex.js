@@ -55,20 +55,19 @@ const ENTRADAS = [
   { brand: U, cat: 'contrato_novacion', prov: null, content:
     `El contrato de novación se firma para cada año. Cuando empieza el año nuevo, entra en la sección Contrato de novación de la aplicación y firma el del año en curso. Si ya aparece como firmado, no tienes que hacer nada más. Firmar la novación no contrata ningún producto: después tienes que contratar cada uno.` },
 
-  // El mismo texto en las dos categorías: la búsqueda va acotada por categoría,
-  // así que sin las dos copias solo respondería una de ellas.
-  { brand: U, cat: 'comida', prov: null, content:
-    `Correo de activación de la tarjeta de comida o transporte: al solicitarla no recibirás nada en el momento. SNF+ hace el pedido al emisor el día siguiente al día de corte, y es entonces cuando el emisor (Pluxee, Up Spain o Edenred) te envía el correo para registrarte y activar la tarjeta. Si después de esa fecha no te ha llegado, comprueba primero que el producto aparece en 'Productos contratados' y revisa la carpeta de spam.` },
-  { brand: U, cat: 'transporte', prov: null, content:
-    `Correo de activación de la tarjeta de comida o transporte: al solicitarla no recibirás nada en el momento. SNF+ hace el pedido al emisor el día siguiente al día de corte, y es entonces cuando el emisor (Pluxee, Up Spain o Edenred) te envía el correo para registrarte y activar la tarjeta. Si después de esa fecha no te ha llegado, comprueba primero que el producto aparece en 'Productos contratados' y revisa la carpeta de spam.` },
 
   { brand: R, cat: 'gestion_usuarios', prov: null, content:
     `Al dar de baja a un trabajador, en el campo 'Fecha de baja' indica su último día trabajado.` },
 
+  // El texto del correo de activación de la tarjeta ya no está aquí: soporte lo
+  // fundió con solicitud y envío en un solo fragmento, que vive en
+  // update-chunk.js. Teníamos tres fragmentos contando tramos del mismo
+  // proceso y `comida` se había quedado con 6 genéricos para 3 huecos.
+
   // ── C. Nuevos, empleado ──────────────────────────────────────────────────
 
   { brand: U, cat: 'acceso_navegacion', prov: null, content:
-    `Si no puedes entrar en la aplicación: 1) Tu usuario es tu correo electrónico, no tu DNI. Escríbelo entero en minúsculas. 2) Si no recuerdas la contraseña, pide el cambio desde la pantalla de acceso: te llegará un enlace al correo registrado (revisa también la carpeta de spam). 3) La nueva contraseña debe incluir al menos uno de estos caracteres especiales: ! @ # $ % ^ * ( ) _ - + = { } [ ] ; : , . < > ? 4) Si aun así no puedes entrar o no te llega el correo, puede que tu cuenta esté bloqueada: contacta con el equipo de RRHH de tu empresa o con el soporte de SNF+ para que la desbloqueen.` },
+    `Si no puedes entrar en la aplicación: 1) Tu usuario es tu correo electrónico, no tu DNI. Escríbelo entero en minúsculas. 2) Si no recuerdas la contraseña, pide el cambio desde la pantalla de acceso: te llegará un enlace al correo registrado (revisa también la carpeta de spam). 3) La nueva contraseña debe incluir al menos uno de estos caracteres especiales: ! @ # $ % ^ * ( ) _ - + = { } [ ] ; : , . < > ? 4) Si te aparece el error 7, tu cuenta está bloqueada: solo la puede desbloquear el soporte de SNF+, así que escríbeles. 5) Si aun así no puedes entrar o no te llega el correo, escribe también al soporte de SNF+.` },
 
   { brand: U, cat: 'acceso_navegacion', prov: null, content:
     `Si al entrar o al pedir una nueva contraseña te dice que no existe ninguna cuenta con tu correo, es que todavía no estás dado de alta en la plataforma o te dieron de alta con otro correo. El alta la hace tu empresa: pide al equipo de RRHH que te den de alta o que comprueben qué correo tienen registrado. Cuando estés dado de alta, pide la contraseña desde la pantalla de acceso.` },
@@ -86,7 +85,7 @@ const ENTRADAS = [
     `Para cambiar el importe de un producto que ya tienes contratado: entra en el producto, cambia el importe de los meses que quieras, pulsa Calcular y después Guardar simulación. Para dejar de usarlo, pon a 0 los meses siguientes. Los meses cuyo día de corte ya ha pasado no se pueden cambiar.` },
 
   { brand: U, cat: 'guarderia', prov: null, content:
-    `Pago a la guardería: el emisor paga a la guardería cuando tu empresa le ha pagado la factura del mes; si tu empresa se retrasa en ese pago, también se retrasa el pago a la guardería. Los meses siguientes se pagan de forma automática mientras el producto siga contratado. Si tu guardería no ha cobrado un mes, comprueba primero que el producto aparece en 'Productos contratados'; si está bien, consúltalo con el equipo de RRHH de tu empresa.` },
+    `Cobro de la guardería: el emisor paga a la guardería cuando tu empresa le ha pagado la factura del mes; si tu empresa se retrasa en ese pago, también se retrasa el pago a la guardería. Los meses siguientes se pagan de forma automática mientras el producto siga contratado. Si tu guardería no ha cobrado un mes, comprueba primero que el producto aparece en 'Productos contratados'; si está bien, consúltalo con el equipo de RRHH de tu empresa.` },
 
   { brand: U, cat: 'guarderia', prov: 'up_spain', content:
     `Up educainfantil: justificantes para la renta. Up Spain envía cada mes por correo electrónico el comprobante del pago a la guardería. Guárdalos: te servirán para la declaración de la renta.` },
@@ -102,9 +101,9 @@ const ENTRADAS = [
     `Tarjetas de Up Spain: pérdida y duplicado. Si pierdes la tarjeta de Up Spain (Cheque Gourmet o Up transporte), puedes pedir un duplicado tú mismo a Up Spain o pedírselo al soporte de SNF+. Up Spain lo envía a tu empresa, no a tu domicilio. El saldo no se pierde: pasa a la tarjeta nueva.` },
 
   { brand: U, cat: 'comida', prov: null, content:
-    `Vuelta a la empresa tras una baja: tu tarjeta de comida o transporte anterior sigue activa, sea del emisor que sea. Solo tienes que volver a indicar importes en el producto y se recargará. Si ya no la tienes, puedes pedir una nueva.` },
+    `Vuelta a la empresa tras una baja: tu tarjeta de comida o transporte anterior sigue activa, sea del emisor que sea. Solo tienes que volver a indicar importes en el producto y se recargará. Si ya no tienes la tarjeta, no la pidas desde la aplicación: pídesela al soporte de SNF+, que la gestiona con el emisor.` },
   { brand: U, cat: 'transporte', prov: null, content:
-    `Vuelta a la empresa tras una baja: tu tarjeta de comida o transporte anterior sigue activa, sea del emisor que sea. Solo tienes que volver a indicar importes en el producto y se recargará. Si ya no la tienes, puedes pedir una nueva.` },
+    `Vuelta a la empresa tras una baja: tu tarjeta de comida o transporte anterior sigue activa, sea del emisor que sea. Solo tienes que volver a indicar importes en el producto y se recargará. Si ya no tienes la tarjeta, no la pidas desde la aplicación: pídesela al soporte de SNF+, que la gestiona con el emisor.` },
 
   { brand: U, cat: 'salud', prov: null, content:
     `No puedes contratar un seguro de salud solo para un familiar: los familiares tienen que ir incluidos en el mismo producto que tiene contratado el titular.` },

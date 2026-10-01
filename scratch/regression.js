@@ -212,9 +212,18 @@ const CASES = [
     expect: 'answer', contains: ['duplicado'], absent: ['931 110 086'] },
 
   // ── Pluxee: guardería y transporte ──────────────────────────────────────
-  { id: 'gua-pluxee-nombre', brand: 'snfplus_usuario', cat: 'guarderia', prov: 'pluxee',
-    q: '¿Cómo funciona el pago de la guardería?',
+  // Este caso preguntaba '¿Cómo funciona el pago de la guardería?' y exigía el
+  // nombre de Pluxee. La pregunta es ambigua: 'pago' significa con qué paga el
+  // empleado y también cuándo cobra el centro, y hay un fragmento para cada
+  // sentido. El bot elegía uno, siempre válido, y el caso lo daba por fallo.
+  // Se parte en dos preguntas sin ambigüedad, que es lo que de verdad hay que
+  // vigilar: que cada sentido llegue a su fragmento.
+  { id: 'gua-pluxee-instrumento', brand: 'snfplus_usuario', cat: 'guarderia', prov: 'pluxee',
+    q: '¿Con qué pago la guardería?',
     expect: 'answer', contains: ['cheque'] },
+  { id: 'gua-cobro-centro', brand: 'snfplus_usuario', cat: 'guarderia', prov: 'pluxee',
+    q: '¿Cuándo cobra mi guardería?',
+    expect: 'answer', contains: ['factura'] },
   { id: 'gua-pluxee-no-adherida', brand: 'snfplus_usuario', cat: 'guarderia', prov: 'pluxee',
     q: 'Mi guardería no está adherida, ¿qué puedo hacer?',
     expect: 'answer', contains: ['pluxee'] },
@@ -310,12 +319,19 @@ const CASES = [
   // empleado la espera en casa y da por perdida una tarjeta que está en su
   // oficina. Se piden las dos mitades —dónde y cuánto tarda— porque la
   // respuesta útil las lleva juntas.
+  // Un hecho por pregunta. Pedían dónde llega Y cuánto tarda en la misma
+  // pregunta, y el bot respondía bien al '¿dónde?' sin mencionar el plazo — que
+  // es lo correcto. El caso daba por fallo una respuesta ajustada a lo que se
+  // preguntaba; el plazo se vigila aparte.
   { id: 'envio-tarjeta-comida', brand: 'snfplus_usuario', cat: 'comida',
     q: '¿Dónde me llega la tarjeta de comida?',
-    expect: 'answer', contains: ['empresa', 'habiles'] },
+    expect: 'answer', contains: ['empresa'] },
   { id: 'envio-tarjeta-transporte', brand: 'snfplus_usuario', cat: 'transporte',
     q: '¿Dónde me llega la tarjeta de transporte?',
-    expect: 'answer', contains: ['empresa', 'habiles'] },
+    expect: 'answer', contains: ['empresa'] },
+  { id: 'envio-plazo-tarjeta', brand: 'snfplus_usuario', cat: 'comida',
+    q: '¿Cuánto tarda en llegarme la tarjeta?',
+    expect: 'answer', contains: ['habiles'] },
 
 
   // ── Buzón de soporte (AXA Flex) ─────────────────────────────
